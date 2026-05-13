@@ -1,0 +1,1990 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>HZ.IDTSCore.Api</name>
+    </assembly>
+    <members>
+        <member name="T:HZ.IDTSCore.Api.Authorization.AuthorizationAttribute">
+            <summary>
+            登录验证过滤器
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.BaseController.GetSessionItem``1(System.String)">
+            <summary>
+            获取 Session 内容
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="key"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.BaseController.toResponse(HZ.CommonUtil.Model.StatusCodeType)">
+            <summary>
+            返回封装
+            </summary>
+            <param name="statusCode"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.BaseController.toResponse(HZ.CommonUtil.Model.StatusCodeType,System.String)">
+            <summary>
+            返回封装
+            </summary>
+            <param name="statusCode"></param>
+            <param name="retMessage"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.BaseController.toResponse``1(``0)">
+            <summary>
+            返回封装
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Common.KeyController.GetKeyValue(System.String,System.String)">
+            <summary>
+            扫描条码 返回条码实体
+            </summary>
+            <param name="barCode">扫描条码</param>
+            <param name="type">码值类型{物料码、批次号}</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equiment.EquialarmlogsController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_equialarmlogs_name、cn_s_equialarmlogs_errcode、cn_s_equialarmlogs_errmsg、cn_t_equialarmlogs_timestamp分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equiment.EquialarmlogsController.Delete(System.String[])">
+            <summary>
+            批量删除
+            </summary>
+            <param name="guidList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equiment.EquireallogsController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_equireallogs_name和cn_s_equireallogs_timestamp分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equiment.EquireallogsController.Delete(System.String[])">
+            <summary>
+            批量删除
+            </summary>
+            <param name="guidList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquibomController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquibomController.Add(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equibom)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquibomController.Update(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equibom)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param> 
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquibomController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectattrController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按对象名、属性名（模糊）分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectattrController.Add(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equiobjectattr)">
+            <summary>
+            新增对象属性
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectattrController.Update(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equiobjectattr)">
+            <summary>
+            修改对象属性
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectattrController.Delete(System.Collections.Generic.List{System.String})">
+            <summary>
+            批量删除对象属性
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_object_equiguid和cn_s_object_name分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectController.Add(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equiobject)">
+            <summary>
+            新增对象
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectController.Update(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equiobject)">
+            <summary>
+            修改对象
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectController.Delete(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equiobject)">
+            <summary>
+            删除对象
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectController.GetObjectTree">
+            <summary>
+            获取设备树
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectController.CopyObject(System.String)">
+            <summary>
+            复制对象
+            </summary>
+            <param name="guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiobjectController.PasteObject(HZ.IDTSCore.Model.Entity.Equipment.PasteObject)">
+            <summary>
+            粘贴对象
+            </summary>
+            <param name="pasteObject"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquipmentController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_equi_no和cn_s_equi_name分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquipmentController.Add(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equipment)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquipmentController.Update(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equipment)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquipmentController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquipmentController.GetListData(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按设备编号和设备名称混合模糊查询获取列表数据
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquipmentController.SaveData(HZ.IDTSCore.Model.Entity.Equipment.SaveData)">
+            <summary>
+            保存
+            </summary>
+            <param name="saveData"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquipmentController.DeleteData(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equipment)">
+            <summary>
+            删除
+            </summary>
+            <param name="equipment"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquipmentController.CopyEquipment(HZ.IDTSCore.Model.Entity.Equipment.CompletemachineTree,System.Boolean)">
+            <summary>
+            复制整机
+            </summary>
+            <param name="completemachineTree"></param>
+            <param name="needCopyComponents"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_equirepair_category、cn_s_equirepair_date、cn_s_equi_parttype、cn_s_equirepair_name(模糊)分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.Add(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equirepair)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.Update(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equirepair)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.GetEquipmentTree(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            获取设备树
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.SaveDataRepair(HZ.IDTSCore.Model.Entity.Equipment.SaveData_Repair)">
+            <summary>
+            保存设备维修
+            </summary>
+            <param name="saveData"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.DeleteDataRepair(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equirepair})">
+            <summary>
+            删除设备维修
+            </summary>
+            <param name="equirepair"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.Detail(System.String)">
+            <summary>
+            查看详情
+            </summary>
+            <param name="guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.DeleteReason(System.String)">
+            <summary>
+            删除故障原因
+            </summary>
+            <param name="guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.GetMatterPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按事项名称分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.DeleteMatter(System.String)">
+            <summary>
+            删除维修项目
+            </summary>
+            <param name="guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquirepairController.GetReasonPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按故障原因分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_equirepair_category、cn_s_equirepair_date、cn_s_equi_parttype、cn_s_equirepair_name(模糊)分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.Add(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equiupkeep)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.Update(HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equiupkeep)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.GetEquipmentTree(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            获取设备树
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.SaveDataUpkeep(HZ.IDTSCore.Model.Entity.Equipment.SaveData_Upkeep)">
+            <summary>
+            保存设备保养
+            </summary>
+            <param name="saveData"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.DeleteDataUpkeep(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.Equipment.tn_dts_equiupkeep})">
+            <summary>
+            删除设备保养
+            </summary>
+            <param name="equiupkeepList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.Detail(System.String)">
+            <summary>
+            查看详情
+            </summary>
+            <param name="guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.GetMatterPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按事项名称分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Equipment.EquiupkeepController.DeleteMatter(System.String)">
+            <summary>
+            删除保养项目
+            </summary>
+            <param name="guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.HomeController.DbBackupTester">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.HomeController.Install(System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            安装配置向导
+            </summary>
+            <param name="dbType"></param>
+            <param name="dbHostIP"></param>
+            <param name="dbHostPort"></param>
+            <param name="dbName"></param>
+            <param name="dbUser"></param>
+            <param name="dbPassword"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.EquiQuerylist(System.String,System.String)">
+            <summary>
+            设备查询位置定位
+            </summary>
+            <param name="equiCode">设备编号</param>
+            <param name="equiName">设备名称</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.GoodsQuerylist(System.String,System.String,System.String)">
+            <summary>
+            物资查询位置定位接口（兼容料架）
+            </summary>
+            <param name="goodsCode">物料编码</param>
+            <param name="goodsName">物料名称</param>
+            <param name="pileofland">项目编号</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.Dexplosion(HZ.IDTSCore.Model.Entity.OpenApi.DeviceExplosionModel)">
+            <summary>
+            AGV爆炸图核心部件展示交互项
+            </summary>
+            <param name="deviceExplosionModel"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.GetPartDetail(HZ.IDTSCore.Model.Entity.OpenApi.PartDetail)">
+            <summary>
+            获取零部件接口
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.UniversallyAddLog(HZ.IDTSCore.Model.Entity.Sys.OpenLog)">
+            <summary>
+            通用新增日志接口
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.StackerRealCollect(HZ.IDTSCore.Model.Entity.OpenApi.StackerRealCollectViewModel)">
+            <summary>
+            开放堆垛车数据同步接口
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.RGVRealCollect(HZ.IDTSCore.Model.Entity.OpenApi.RGVRealCollectViewModel)">
+            <summary>
+            开放RGV数据同步接口
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.ConveyorRealCollect(HZ.IDTSCore.Model.Entity.OpenApi.ConveyorRealCollectViewModel)">
+            <summary>
+            开放输送线数据同步接口
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.GetMenu">
+            <summary>
+            获取菜单权限
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.GetHomeAngle">
+            <summary>
+            获取首页视角区域
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.GetGoodsInfo(System.String,System.String,System.String,System.String)">
+            <summary>
+            获取载具上物料详细信息
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.EquicommandController.GetEquipmentTypeTree(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+             获取设备类型-设备树信息（按设备编号和设备名称混合模糊）
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.EquicommandController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按设备唯一标识、指令编码（模糊）、指令名称（模糊）和指令类型分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.EquicommandController.GetEquipmentInformationByEquitype(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            获取一个设备类型下所有设备信息
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.EquicommandController.BatchAddEquicommand(HZ.IDTSCore.Model.Entity.SenarioTesting.BatchAddEquicommandDate)">
+            <summary>
+            批量添加设备指令
+            </summary>
+            <param name="batchAddDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.EquicommandController.UpdateEquicommand(HZ.IDTSCore.Model.Entity.SenarioTesting.tn_dts_equicommand)">
+            <summary>
+            修改设备指令
+            </summary>
+            <param name="equicommand"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.EquicommandController.EditEquicommandJson(HZ.IDTSCore.Model.Entity.SenarioTesting.EditEquicommandDate)">
+            <summary>
+            编辑模版
+            </summary>
+            <param name="editEquicommandDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.EquicommandController.GetEquicommandInformationPages(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按指令编码和指令名称混合模糊分页查询（设备指令管理）
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.EquicommandController.CopyEquicommand(HZ.IDTSCore.Model.Entity.SenarioTesting.CopyEquicommandDate)">
+            <summary>
+            复制设备指令
+            </summary>
+            <param name="copyEquicommandDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.EquicommandController.DeleteEquicommand(System.Collections.Generic.List{System.String})">
+            <summary>
+            批量删除设备指令
+            </summary>
+            <param name="guidList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.GetEquipmentInformationByEquitype(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            获取一个货位设备类型下所有货位设备信息
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.BatchAddGoodscommand(HZ.IDTSCore.Model.Entity.SenarioTesting.BatchAddGoodscommandDate)">
+            <summary>
+            批量添加设备指令
+            </summary>
+            <param name="batchAddDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.UpdateGoodscommand(HZ.IDTSCore.Model.Entity.SenarioTesting.tn_dts_goodscommand)">
+            <summary>
+            修改货位指令
+            </summary>
+            <param name="goodscommand"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.EditGoodscommandJson(HZ.IDTSCore.Model.Entity.SenarioTesting.EditGoodscommandDate)">
+            <summary>
+            编辑货位指令
+            </summary>
+            <param name="editGoodscommandDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按指令编码（模糊）、指令名称（模糊）和指令类型分页查询
+            </summary>
+            <param name="parm"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.CopyGoodscommand(HZ.IDTSCore.Model.Entity.SenarioTesting.CopyGoodscommandDate)">
+            <summary>
+            复制货位指令
+            </summary>
+            <param name="copyGoodscommandDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.DeleteGoodscommand(System.Collections.Generic.List{System.String})">
+            <summary>
+            批量删除货位指令
+            </summary>
+            <param name="guidList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.GetGoodscommandInformationPages(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按指令编码和指令名称混合模糊分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.GetStockInformationByGooodsequipmentGuid(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            根据货位设备唯一标识分页模糊查询货位信息
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.GetItemRowInformationByGooodsequipmentGuidRowcollayer(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            根据货位设备唯一标识和排列层分页模糊查询物料信息
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.BatchAddLocation(HZ.IDTSCore.Model.Entity.SenarioTesting.BatchAddLocationDate)">
+            <summary>
+            批量添加库位
+            </summary>
+            <param name="batchAddLocationDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.ModifyLocation(HZ.IDTSCore.Model.Entity.SenarioTesting.ModifyLocationDate)">
+            <summary>
+            修改库位
+            </summary>
+            <param name="modifyLocationDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodscommandController.DeleteLocation(HZ.IDTSCore.Model.Entity.SenarioTesting.DeleteLocationDate)">
+            <summary>
+            删除库位
+            </summary>
+            <param name="deleteLocationDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodsequipmentController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按货位设备编码和名称混合模糊分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodsequipmentController.GetSiteByStockArea(HZ.IDTSCore.Model.Entity.SenarioTesting.GetReturnSite)">
+            <summary>
+            获取指定仓库库区下所有地堆
+            </summary>
+            <param name="getReturnSite"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodsequipmentController.GetGoodsequipment(System.String)">
+            <summary>
+            获取指定货位设备信息
+            </summary>
+            <param name="goodsequipmentguid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodsequipmentController.SaveGoodsequipment(HZ.IDTSCore.Model.Entity.SenarioTesting.SaveGoodsequipment)">
+            <summary>
+            保存货位设备
+            </summary>
+            <param name="saveGoodsequipment"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.GoodsequipmentController.DeleteGoodsequipment(System.Collections.Generic.List{System.String})">
+            <summary>
+            批量删除货位设备
+            </summary>
+            <param name="guidList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按流程编码和流程名称分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetEquipment(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按设备类型、设备编码和设备名称混合模糊分页查询设备信息
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetStockSite(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按（立库/地堆）编码或（立库/地堆）名称混合模糊分页查询（立库/地堆）信息
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetAllChisceneByParsceneguid(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            通过流程主表唯一标识获取所有流程子表信息（含设备信息、起点信息和终点信息）
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.SaveProcedure(HZ.IDTSCore.Model.Entity.SenarioTesting.SaveProcedureDate)">
+            <summary>
+            保存流程
+            </summary>
+            <param name="saveProcedureDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.DeleteProcedure(System.Collections.Generic.List{System.String})">
+            <summary>
+            批量删除流程
+            </summary>
+            <param name="guidList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetAllChiscenePlusByParsceneguid(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            通过流程主表唯一标识获取所有流程子表信息（含设备信息、起点信息、终点信息和修改创建信息）
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetEquicommandPlusInformationPages(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按有无通配符、指令编码和指令名称混合模糊分页查询（设备指令管理）
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetGoodscommandInformationPages(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按货位设备、指令编码和指令名称混合模糊分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetAllGoodsequipmentInformation(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            获取所有货位设备信息
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.SaveEquipment(HZ.IDTSCore.Model.Entity.SenarioTesting.SaveEquipmentDate)">
+            <summary>
+            保存设备（配置）
+            </summary>
+            <param name="saveEquipmentDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetAllChiequipmentByChiprocedureguid(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            通过流程子表唯一标识获取所有设备子表信息（含指令信息）
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParprocedureController.GetAllChiequipmentPlusByChiprocedureguid(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            通过流程子表唯一标识获取所有设备子表信息（含指令信息和修改创建信息）
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParsceneController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按场景编码（模糊）、场景名称（模糊）、流程关系分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParsceneController.GetProcedure(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按流程编码和流程名称混合模糊分页查询流程信息
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParsceneController.GetAllChisceneByParsceneguid(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            通过场景主表唯一标识获取所有场景子表信息（含流程信息）
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParsceneController.SaveScene(HZ.IDTSCore.Model.Entity.SenarioTesting.SaveSceneDate)">
+            <summary>
+            保存场景
+            </summary>
+            <param name="saveSceneDate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParsceneController.DeleteScene(System.Collections.Generic.List{System.String})">
+            <summary>
+            批量删除场景
+            </summary>
+            <param name="guidList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.ParsceneController.GetAllChiscenePlusByParsceneguid(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            通过场景主表唯一标识获取所有场景子表信息（含流程信息和修改创建信息），按流程编码和流程名称分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.SenarioTestingController.GetCollectionList">
+            <summary>
+            获取连接列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.SenarioTesting.SenarioTestingController.GetPostInformation(System.String)">
+            <summary>
+            读取向指定IP进行WebSocket推送信息
+            </summary>
+            <param name="collctionipport"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.BackupsController.BackUp(System.String)">
+            <summary>
+            手工备份
+            </summary>
+            <param name="backupFilePath"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.BackupsController.Save(HZ.IDTSCore.Model.Entity.Sys.SaveBackups)">
+            <summary>
+            保存
+            </summary>
+            <param name="saveBackups"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.BackupsController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            分页获取所有备份记录（不含查询）
+            </summary>
+            <param name="parm"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.BackupsController.GetLatestSaveBackups">
+            <summary>
+            获取最近的自动备份配置
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CacheController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            分页查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CacheController.Add(HZ.IDTSCore.Model.Entity.Sys.tn_dts_cache)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CacheController.Update(HZ.IDTSCore.Model.Entity.Sys.tn_dts_cache)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CacheController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CacheController.SynchronousCache(HZ.IDTSCore.Model.Entity.Sys.CacheSynchronousness)">
+            <summary>
+            同步缓存
+            </summary>
+            <param name="cs"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CacheController.GetAllDictByParentname(System.String)">
+            <summary>
+            通用获取字典接口
+            </summary>
+            <param name="parentname">字典父项名称</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CameraAreaController.AddCameraArea(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            新增相机区域
+            </summary>
+            <param name="areacode">区域编号</param>
+            <param name="areaname">区域名称</param>
+            <param name="arearemarks">备注</param>
+            <param name="areapoints">区域坐标系</param>
+            <param name="haspicture">用户新增时是否上传区域静态图</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CameraAreaController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按相机名称分页模糊查询
+            </summary>
+            <param name="parm"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CameraAreaController.UpdateCameraArea(System.String,System.String,System.String,System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            修改相机区域
+            </summary>
+            <param name="guid">唯一标识</param>
+            <param name="areacode">区域编号</param>
+            <param name="areaname">区域名称</param>
+            <param name="arearemarks">备注</param>
+            <param name="areapoints">区域坐标系</param>
+            <param name="isDelete">是否删除原有静态图</param>
+            <param name="hasFromdate">fromdate里有无图片</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CameraAreaController.DeleteCameraArea(System.Collections.Generic.List{System.String})">
+            <summary>
+            删除相机区域
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CameraAreaController.MatchCameraArea(HZ.IDTSCore.Model.Entity.Sys.MatchPoint)">
+            <summary>
+            匹配指定点所在坐标区域
+            </summary>
+            <param name="matchPoint"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CameraController.AddCamera(HZ.IDTSCore.Model.Entity.Sys.tn_dts_camera)">
+            <summary>
+            新增相机
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CameraController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按相机名称分页模糊查询
+            </summary>
+            <param name="parm"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CameraController.UpdateCamera(HZ.IDTSCore.Model.Entity.Sys.tn_dts_camera)">
+            <summary>
+            修改相机
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.CameraController.DeleteCamera(System.Collections.Generic.List{System.String})">
+            <summary>
+            批量删除相机
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.FilesController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_files_source_guid和cn_s_files_source_name分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.FilesController.Add(HZ.IDTSCore.Model.Entity.Sys.tn_dts_files)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.FilesController.Update(HZ.IDTSCore.Model.Entity.Sys.tn_dts_files)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.FilesController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.FilesController.UploadFiles(System.String,System.String)">
+            <summary>
+            附件上传接口
+            </summary>
+            <param name="sourcemodule"></param>
+            <param name="sourceguid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.FilesController.DownloadFile(System.String)">
+            <summary>
+            附件下载接口
+            </summary>
+            <param name="file">唯一标识_文件名称</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.FilesController.DeleteFile(System.String)">
+            <summary>
+            附件删除接口
+            </summary>
+            <param name="file">唯一标识_文件名</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.PageSetController.Add(HZ.IDTSCore.Model.tn_wms_view_table_conf)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_setting_class、cn_s_setting_keycode和cn_s_setting_keyname分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.Add(HZ.IDTSCore.Model.Entity.Sys.tn_dts_setting)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.Update(HZ.IDTSCore.Model.Entity.Sys.tn_dts_setting)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.SaveSetting(HZ.IDTSCore.Model.Entity.Sys.SettingSavety)">
+            <summary>
+            保存设置
+            </summary>
+            <param name="ss"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.TestRelationDateBaseConnection(HZ.IDTSCore.Model.Entity.Sys.WizardDateBase)">
+            <summary>
+            测试关系数据库设置向导连通性
+            </summary>
+            <param name="wizardDateBase"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.TestWebSocketConnection(System.String)">
+            <summary>
+            测试WebSocket连通性（是否可以创建WebSocket服务端，而非测试WebSocket服务端连通性）
+            </summary>
+            <param name="wsURL"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.TestMDGAPIConnection(System.String)">
+            <summary>
+            测试MDGAPI连通性
+            </summary>
+            <param name="mdgURL"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.TestThreeDimensionScreenConnection(System.String)">
+            <summary>
+            测试3D大屏URL连通性
+            </summary>
+            <param name="threeDimensionURL"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.TestRedisConnection(System.String)">
+            <summary>
+            测试MDG_Redis连通性
+            </summary>
+            <param name="redisURL"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.TestMongoDbConnection(HZ.IDTSCore.Model.Entity.Sys.MongoDBConnection)">
+            <summary>
+            测试MongoDB连通性
+            </summary>
+            <param name="mongoDBConnection"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.NextStep(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.Sys.SettingItem})">
+            <summary>
+            下一步接口
+            </summary>
+            <param name="settingItemList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.RestartApp">
+            <summary>
+            重启服务、退出当前应用程序
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.SettingController.GetKeyvalueByKeycode(System.String)">
+            <summary>
+            根据关键字编码读取设置值
+            </summary>
+            <param name="keycode"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.ThreeDimensionAngleAreaController.SaveThreeDimensionAngleArea(HZ.IDTSCore.Model.Entity.Sys.SaveThreeDimensionAngleArea)">
+            <summary>
+            保存3D建模视角区域
+            </summary>
+            <param name="saveThreeDimensionAngleArea"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.ThreeDimensionAngleAreaController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按视角区域名称分页模糊查询
+            </summary>
+            <param name="parm"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.ThreeDimensionAngleAreaController.DeleteThreeDimensionAngleArea(System.Collections.Generic.List{System.String})">
+            <summary>
+            删除3D建模视角区域
+            </summary>
+            <param name="guidList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.WinservicesController.Save(HZ.IDTSCore.Model.Entity.Sys.SaveWinservices)">
+            <summary>
+            保存
+            </summary>
+            <param name="saveBackups"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.WinservicesController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            分页获取所有备份记录（不含查询）
+            </summary>
+            <param name="parm"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.WinservicesController.OperateService(HZ.IDTSCore.Model.Entity.Sys.OperateServiceParameter)">
+            <summary>
+            操作服务
+            </summary>
+            <param name="operateServiceParameter"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Sys.WinservicesController.GetWinServiceName(System.String)">
+            <summary>
+            根据指定备注读取服务名称
+            </summary>
+            <param name="remarks"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.LogsController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_logs_type和cn_t_create分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.LogsController.Add(HZ.IDTSCore.Model.Entity.Sys.tn_dts_logs)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.LogsController.Update(HZ.IDTSCore.Model.Entity.Sys.tn_dts_logs)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.LogsController.Delete(System.String[])">
+            <summary>
+            批量删除日志
+            </summary>
+            <param name="guidList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.SiteinfoController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_siteinfo_code和cn_s_siteinfo_name分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.SiteinfoController.Add(HZ.IDTSCore.Model.Entity.location.tn_dts_siteinfo)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.SiteinfoController.Update(HZ.IDTSCore.Model.Entity.location.tn_dts_siteinfo)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.SiteinfoController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.SiteinfoController.SynchronizationByOneClick">
+            <summary>
+            一键同步
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.SiteinfoController.ExecuteUpdateDeleteBatchsetting(HZ.IDTSCore.Model.Entity.location.ExecuteUpdateDeleteBatchsetting)">
+            <summary>
+            执行修改、删除、批量设置
+            </summary>
+            <param name="executeUpdateDeleteBatchsetting"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_location_areacode和cn_s_location_areaname分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.Add(HZ.IDTSCore.Model.Entity.location.tn_dts_stock3d)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.Update(HZ.IDTSCore.Model.Entity.location.tn_dts_stock3d)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.GetAllStockUsedByAdd">
+            <summary>
+            获取全部仓库名和仓库编号（新增调用）
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.GetAllAreaWithStocknameUsedByAdd(HZ.IDTSCore.Model.Entity.location.GetReturnStock)">
+            <summary>
+            根据选择的仓库名获取全部库区名及其最大排列行（新增调用）
+            注：这里返回的最大排列层在区域没有货位或区域里的货位排列层都为null时，返回排列层全为0
+            </summary>
+            <param name="getReturnStock"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.GetAreaMaxRowcollayer(HZ.IDTSCore.Model.Entity.location.GetAreaMaxRowColLayer)">
+            <summary>
+            获取指定库区最大排列层
+            </summary>
+            <param name="getAreaMaxRowColLayer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.GetUpdateUsedByUpdate(HZ.IDTSCore.Model.Entity.location.GetUpdate)">
+            <summary>
+            获取修改显示信息（修改调用）
+            </summary>
+            <param name="getUpdate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.ExecuteAddUpdateDelete(HZ.IDTSCore.Model.Entity.location.ExecuteAddUpdateDelete)">
+            <summary>
+            执行新增、修改和删除
+            </summary>
+            <param name="executeAddUpdateDelete"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.Stock3dController.GetScrapList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            获取报废列表
+            </summary>
+            <param name="getScrapList"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.GetPageList(HZ.CommonUtil.Model.PageParm)">
+            <summary>
+            按cn_s_ver_number和cn_s_ver_packagedate分页模糊查询
+            </summary>
+            <param name="param"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.Add(HZ.IDTSCore.Model.Entity.Sys.tn_dts_version)">
+            <summary>
+            新增
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.Update(HZ.IDTSCore.Model.Entity.Sys.tn_dts_version)">
+            <summary>
+            修改
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.Delete(System.String[])">
+            <summary>
+            删除
+            </summary>
+            <param name="cn_s_guid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.UploadUpdate">
+            <summary>
+            上传更新包
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.UnpackFiles(System.String,System.String)">
+            <summary>
+            解压缩
+            </summary>
+            <param name="file">待解压文件名(包含物理路径)</param>
+            <param name="dir"> 解压到哪个目录中(包含物理路径)</param>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.DeleteFolder(System.String)">
+            <summary>
+            删除指定文件夹中所有项
+            </summary>
+            <param name="dir"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.GetAllPackageDateByNumber(System.String)">
+            <summary>
+            读取一个产品版本号里所有的更新包版本
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.BackUpPackage(HZ.IDTSCore.Model.Entity.Sys.BackupsPackage)">
+            <summary>
+            修改指定更新包版本的备份信息
+            </summary>
+            <param name="backupsPackage"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.ExecuteUpdatePackage(HZ.IDTSCore.Model.Entity.Sys.ExecuteUpdatePackage)">
+            <summary>
+            修改指定更新包版本的更新信息
+            </summary>
+            <param name="executeUpdatePackage"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.GetLatestUIVersion">
+            <summary>
+            获取最新前端更新版本
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.GetLatestAPIVersion">
+            <summary>
+            获取最新后端更新版本
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.GetLatestNumberVersion">
+            <summary>
+             获取最新产品版本号
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.Info.VersionController.DeleteAllPackageDateByNumber(System.String)">
+            <summary>
+            删除一个产品版本号里所有的更新包版本
+            </summary>
+            <param name="number"></param>
+            <returns></returns>
+        </member>
+        <member name="T:HZ.IDTSCore.Api.Controllers.User.LoginController">
+            <summary>
+            login相关
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.User.LoginController.GetAllMenus(System.String)">
+            <summary>
+            获取菜单
+            </summary>
+            <param name="sourceTerminal"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.User.LoginController.GetButton(System.String)">
+            <summary>
+            获取按钮
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.User.LoginController.EditPassword(Newtonsoft.Json.Linq.JObject)">
+            <summary>
+            修改密码
+            </summary>
+            <param name="jObject"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.User.LoginController.GetApkUpdateInfoByApp">
+            <summary>
+            APP版本自动更新
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Global.GlobalExceptions.WriteLog(System.String,System.Exception)">
+            <summary>
+            自定义返回格式
+            </summary>
+            <param name="throwMsg"></param>
+            <param name="ex"></param>
+            <returns></returns>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Global.SenarioTestingProcess.IsExitLoop">
+            <summary>
+            是否退出循环推送
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Global.SenarioTestingProcess.HasSynchronizeStock">
+            <summary>
+            （循环推送）是否执行过货位同步
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Global.SenarioTestingProcess.StartTesting(HZ.IDTSCore.Model.Entity.SenarioTesting.StartTestingViewModel)">
+            <summary>
+            开始测试
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Global.SenarioTestingProcess.AsyncWebSocket(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.MongoDB.MongoCommand},System.Threading.CancellationTokenSource,System.Threading.ManualResetEvent)">
+            <summary>
+            广播指令
+            </summary>
+            <param name="mongoCommandList"></param>
+            <param name="cancellationToken"></param>
+            <param name="manualResetEvent"></param>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Global.SenarioTestingProcess.AsyncWebSocketStock(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.OpenApi.LocationRealMonitorViewModel},System.Threading.CancellationTokenSource,System.Threading.ManualResetEvent,System.Int32)">
+            <summary>
+            广播货位
+            </summary>
+            <param name="locationRealMonitorViewModelList"></param>
+            <param name="cancellationToken"></param>
+            <param name="manualResetEvent"></param>
+            <param name="interval"></param>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Global.SenarioTestingProcess.StopTesting(HZ.IDTSCore.Model.Entity.SenarioTesting.StopTestingViewModel)">
+            <summary>
+            停止测试
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Global.SenarioTestingProcess.PauseTesting(HZ.IDTSCore.Model.Entity.SenarioTesting.PauseTestingViewModel)">
+            <summary>
+            暂停测试
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Global.SenarioTestingProcess.ContinueTesting(HZ.IDTSCore.Model.Entity.SenarioTesting.ContinueTestingViewModel)">
+            <summary>
+            继续测试
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="T:HZ.IDTSCore.Api.Global.WebSocketReceiveFilter">
+            <summary>
+            WebSocket 客户端消息接收类
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Global.WebSocketReceiveFilter.Receive(SuperSocket.WebSocket.Server.WebSocketSession,System.String)">
+            <summary>
+            通用接收类
+            </summary>
+            <param name="session"></param>
+            <param name="message"></param>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Instance.BackupsDriver.DBackups">
+            <summary>
+            自动备份的最新配置信息
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.BackupsDriver.LastDBackups">
+            <summary>
+            上一次自动备份配置信息
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.BackupsDriver.LastBackups">
+            <summary>
+            自动备份配置修改时间
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.BackupsDriver.IsFirst">
+            <summary>
+            是否刚启动API
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.BackupsDriver.BackupsFlag">
+            <summary>
+            是否执行自动备份
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.BackupsDriver.RestoreFlagTime">
+            <summary>
+            复原BackupsFlag时间
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.BackupsDriver.GetWeekDayOfYearRange(System.DateTime)">
+            <summary>
+            获取指定日期所在周的周一和周日在该年（前一年/后一年）的DayOfYear
+            </summary>
+            <param name="dateTime">指定日期</param>
+            <returns></returns>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Instance.CameraAreaDriver.LatestCameraAreaPointList">
+            <summary>
+            最新相机区域坐标系列表
+            </summary>
+        </member>
+        <member name="T:HZ.IDTSCore.Api.Instance.DeviceDriver">
+            <summary>
+            通用的设备全局变量
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.DeviceDriver.Instance">
+            <summary>
+            获取单实例
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Instance.DeviceDriver._stateListLock">
+            <summary>
+            设备状态集合
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Instance.DeviceDriver.RealCollectList">
+            <summary>
+            设备采集最新集合
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Instance.DeviceDriver.DExplosion">
+            <summary>
+            设备爆炸图当前展示的设备信息
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DeviceDriver.PublishDevices(System.String,System.String,System.String,System.String,System.String,System.String,System.DateTime)">
+            <summary>
+            设备刷新内存
+            </summary>
+            <param name="deviceCode">设备编号</param>
+            <param name="deviceName">设备名称</param>
+            <param name="deviceType">设备类型</param>
+            <param name="deviceState">设备状态</param>
+            <param name="errCode">异常代码</param>
+            <param name="errMsg">异常说明</param>
+            <param name="publishTimestamp">更新时间戳</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DeviceDriver.PublishRealCollect(HZ.IDTSCore.Model.Entity.OpenApi.GlobalRealCollectViewModel)">
+            <summary>
+            刷新内存设备采集数据
+            </summary>
+            <param name="deviceModel"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.RefreshStockItemInformation(System.String)">
+            <summary>
+            刷新指定货位设备Mongo库位信息
+            </summary>
+            <param name="goodsequipmentguid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.WatchStockItemInformation(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.MongoDB.StockItemInformation}@,System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.SenarioTesting.RefreshStock},System.String)">
+            <summary>
+            判定货位信息是否修改
+            </summary>
+            <param name="stockItemInformationList"></param>
+            <param name="refreshStockList"></param>
+            <param name="goodsequipmentGuid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.WatchItemRow(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.MongoDB.ItemRowInformation}@,System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.OpenApi.ItemRowViewModel},System.String,System.String)">
+            <summary>
+            判定物料信息是否修改
+            </summary>
+            <param name="itemRowInformationList"></param>
+            <param name="itemRowViewModelList"></param>
+            <param name="goodsequipmentGuid"></param>
+            <param name="rowColLayer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.GetAreaMaxRowcollayer(HZ.IDTSCore.Model.Entity.location.GetAreaMaxRowColLayer)">
+            <summary>
+            获取指定仓库库区最大排列层
+            </summary>
+            <param name="getAreaMaxRowColLayer"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.SynchronizeStock(System.String)">
+            <summary>
+            同步货位
+            </summary>
+            <param name="goodsequipmentno"></param>
+            <returns></returns>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.ObjectDriver.latestCopyObjectGuid">
+            <summary>
+            最新复制对象唯一标识
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.StorageDriver.Instance">
+            <summary>
+            获取单实例
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Instance.StorageDriver.GoodsList">
+            <summary>
+            货位信息内存
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.StorageDriver.PublishStocksInfo(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.OpenApi.StockViewModel})">
+            <summary>
+            刷新信息
+            </summary>
+            <param name="stocks"></param>
+            <returns></returns>
+        </member>
+        <member name="T:HZ.IDTSCore.Api.Instance.SystemDriver">
+            <summary>
+            系统级全局全量，主要是将系统参数设置所有数据缓存到内存中。
+            在修改所有的参数设置时，刷新变量，实现内存数据与数据库设置数据
+            保持一致性，在其他线程或方法体可直接访问全局变量。
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.SystemDriver.Instance">
+            <summary>
+            获取单实例
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Instance.SystemDriver.SysSetList">
+            <summary>
+            全局系统参数
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.SystemDriver.GetKeyListForClassify(System.String)">
+            <summary>
+            获取分类下面的参数项
+            </summary>
+            <param name="classify">分类名称</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.SystemDriver.GetKeyValueObjectForKeyCode(System.String)">
+            <summary>
+            通过关键字编码获取关键字值
+            </summary>
+            <param name="keyCode">关键字编码</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.SystemDriver.GetKeyValueForKeyCode(System.String)">
+            <summary>
+            通过关键字编码获取关键字值
+            </summary>
+            <param name="keyCode">关键字编码</param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.SystemDriver.SetKeyValueForKeyCode(System.String,System.String)">
+            <summary>
+            根据关键字设置参数值
+            </summary>
+            <param name="keyCode">关键字</param>
+            <param name="keyValue">关键字值</param>
+            <returns></returns>
+        </member>
+        <member name="T:HZ.IDTSCore.Api.Middleware.RequestMiddleware">
+            <summary>
+            中间件
+            记录请求和响应数据
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.Middleware.RequestMiddleware.logger">
+            <summary>
+            日志接口
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.BackupsThread._AutomaticBackUpThread">
+            <summary>
+            线程:自动备份线程
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.BackupsThread.Message">
+            <summary>
+            异常信息
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.BackupsThread.Start">
+            <summary>
+            开启服务
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.BackupsThread.Stop">
+            <summary>
+            停止服务
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "P:HZ.IDTSCore.Api.ControlThread._SendThread" -->
+        <member name="P:HZ.IDTSCore.Api.ControlThread.Instance">
+            <summary>
+            获取单实例
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.ControlThread.Initialize">
+            <summary>
+            构造函数 单例模式 只执行一次
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.ControlThread.SendThreadHandle">
+            <summary>
+            待处理命令线程
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.ControlThread.Start">
+            <summary>
+            开启服务
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.ControlThread.Stop">
+            <summary>
+            停止服务
+            </summary>
+        </member>
+        <member name="T:HZ.IDTSCore.Api.DeviceThread">
+            <summary>
+            设备线程类
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.DeviceThread._SyncThread">
+            <summary>
+            线程1:设备档案同步
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.DeviceThread._PushThread">
+            <summary>
+            线程2:数据推送线程
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.DeviceThread._ErrorsPushThread">
+            <summary>
+            线程3:设备异常推送线程
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.DeviceThread.deviceObjcetList">
+            <summary>
+            设备信息内存变量
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.DeviceThread.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            开启线程
+            </summary>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.DeviceThread.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            停止线程
+            </summary>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.DeviceThread.SyncThreadHandle">
+            <summary>
+            设备档案处理
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.DeviceThread.PushThreadHandle">
+            <summary>
+            设备推送线程
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.DeviceThread.ErrorsPushThreadHandle">
+            <summary>
+            异常推送线程
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.DeviceThread.Start">
+            <summary>
+            开启服务
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.DeviceThread.Stop">
+            <summary>
+            停止服务
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.LogsThread._RealLogsService">
+            <summary>
+            设备采集日志接口
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.LogsThread._AlarmLogsService">
+            <summary>
+            设备警报日志接口
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.LogsThread._ILogsService">
+            <summary>
+            系统日志表
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.LogsThread._ClearLogThread">
+            <summary>
+            线程1:日志清理
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.LogsThread.CollectLogsClearDays">
+            <summary>
+            设置采集日志的清理周期(天)
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.LogsThread.RequestLogsClearDays">
+            <summary>
+            请求接口日志清理周期(天)
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.LogsThread.AlarmLogsClearDays">
+            <summary>
+            设备警报日志的清理周期(天)
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.LogsThread.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            开启线程
+            </summary>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.LogsThread.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            停止线程
+            </summary>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.LogsThread.AddRefreshThreadEvent(System.String,System.String,System.String,System.String,System.String,System.DateTime)">
+            <summary>
+            增加一条事件
+            </summary>
+            <param name="option">Init|Update</param>
+            <param name="threadClassName"></param>
+            <param name="threadName"></param>
+            <param name="eventId"></param>
+            <param name="eventName"></param>
+            <param name="lastTime"></param>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.RepairThread._SyncPushThread">
+            <summary>
+            线程:设备维修处理与推送
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.RepairThread.equipmentRepairReminderView">
+            <summary>
+            设备维修提醒项
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.RepairThread.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            开启线程
+            </summary>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.RepairThread.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            停止线程
+            </summary>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.RepairThread.SyncPushThreadHandle">
+            <summary>
+            设备维修处理与推送线程
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.RepairThread.Start">
+            <summary>
+            开启服务
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.RepairThread.Stop">
+            <summary>
+            停止服务
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "P:HZ.IDTSCore.Api.SenarioTestingThread._SendThread" -->
+        <member name="P:HZ.IDTSCore.Api.SenarioTestingThread.IsExitLoop">
+            <summary>
+            停止状态
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.SenarioTestingThread.startJSON">
+            <summary>
+            脚本
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.SenarioTestingThread.Instance">
+            <summary>
+            获取单实例
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.SenarioTestingThread.Initialize">
+            <summary>
+            构造函数 单例模式 只执行一次
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.SenarioTestingThread.SendThreadHandle">
+            <summary>
+            待处理命令线程
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.SenarioTestingThread.Start">
+            <summary>
+            开启服务
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.SenarioTestingThread.Stop">
+            <summary>
+            停止服务
+            </summary>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.UpkeepThread._SyncPushThread">
+            <summary>
+            线程:设备维修处理推送线程
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.UpkeepThread.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            开启线程
+            </summary>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.UpkeepThread.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            停止线程
+            </summary>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.UpkeepThread.Message">
+            <summary>
+            异常信息
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.UpkeepThread.Start">
+            <summary>
+            开启服务
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.UpkeepThread.Stop">
+            <summary>
+            停止服务
+            </summary>
+        </member>
+    </members>
+</doc>

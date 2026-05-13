@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="View\Basic\**" />
+    <EmbeddedResource Remove="View\Basic\**" />
+    <None Remove="View\Basic\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Entity\Base_Company.cs" />
+    <Compile Remove="Entity\Base_Factory.cs" />
+    <Compile Remove="Entity\Base_ProductLine.cs" />
+    <Compile Remove="Entity\Base_ProductProcess.cs" />
+    <Compile Remove="Entity\Base_WorkShop.cs" />
+    <Compile Remove="Entity\Sys_DataRelation.cs" />
+    <Compile Remove="Entity\Sys_Logs.cs" />
+    <Compile Remove="Entity\Sys_Online.cs" />
+    <Compile Remove="Entity\Sys_Options.cs" />
+    <Compile Remove="Entity\Sys_Power.cs" />
+    <Compile Remove="Entity\Sys_Role.cs" />
+    <Compile Remove="Entity\Sys_RolePower.cs" />
+    <Compile Remove="Entity\Sys_UserRelation.cs" />
+    <Compile Remove="Entity\Sys_UserRole.cs" />
+    <Compile Remove="Entity\Sys_Users.cs" />
+    <Compile Remove="View\System\AuthorizeVM.cs" />
+    <Compile Remove="View\UserSessionVM.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Bson" Version="2.13.1" />
+    <PackageReference Include="sqlSugarCore" Version="5.0.9.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HZ.IDTSCore.Common\HZ.IDTSCore.Common.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="HZ.CommonUtil">
+      <HintPath>..\LIB\HZ.CommonUtil.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

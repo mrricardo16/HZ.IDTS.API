@@ -1,0 +1,120 @@
+using Autofac.Extensions.DependencyInjection;
+using HZ.IDTSCore.WebSocketServer;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using NLog;
+using NLog.Web;
+using SuperSocket.WebSocket.Server;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.ServiceProcess;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using HZ.IDTSCore.Model.Entity.SenarioTesting;
+using HZ.CommonUtil.Helpers;
+//1
+namespace HZ.IDTSCore.Api
+{
+
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var logger = NLogBuilder.ConfigureNLog("NLog.config").GetCurrentClassLogger();
+            logger.Debug("MainDebugger-0");
+            try
+            {
+                SenarioTestingThread.Instance.Initialize();
+                SenarioTestingThread.Instance.IsExitLoop = true;
+
+                List<Model.Entity.Sys.tn_dts_setting> SysSetList = new Interfaces.Service.Sys.SettingService(new DbHelper.SessionInfo()
+                {
+                    token = "",
+                    splitDbCode = ""
+                }).GetAll(); ;
+                string webSocketServer = SysSetList.Where(it => it.cn_s_setting_keycode == "WebSocketServer").Select(it => it.cn_s_setting_keyvalue).First();
+                string ipPort = webSocketServer.Substring(5);
+                string ip =  ipPort.Split(':')[0];
+                string port = ipPort.Split(':')[1];
+                //ip = "192.168.8.43"; port = "4040";
+                var host = WebSocketHostBuilder.Create(args)
+              .UseWebSocketMessageHandler(async (session, message) =>
+              {
+                  try
+                  {
+                      //echo message back to the client
+                      Global.WebSocketReceiveFilter.Receive(session, message.Message);
+                  }
+                  catch(Exception exception)
+                  {
+                      LogHelper.Error(DateTime.Now.ToString() + "接受测试指令并响应发生错误，详细信息为：" + exception.Message);
+                  }
+                 
+              }).UseSession<WebSession>()
+              .UsePerMessageCompression()
+              .ConfigureLogging((hostCtx, loggingBuilder) =>
+              {
+                  // register your logging library here
+                  loggingBuilder.AddConsole();
+              })
+              .ConfigureAppConfiguration((hostCtx, configApp) =>
+              {
+                  configApp.AddInMemoryCollection(new Dictionary<string, string>
+                  {
+                      { "serverOptions:name", "HZWebSocketServer" },
+                      { "serverOptions:listeners:0:ip", ip },
+                      { "serverOptions:listeners:0:port", port }//修改为从tn_dts_setting表中读取
+                  });
+              }).Build();
+                _ = host.RunAsync();
+                logger.Debug("MainDebugger-1");
+            }
+            catch (Exception ex)
+            {
+            }
+
+
+            try
+            {
+                CreateHostBuilder(args).Build().Run();
+                logger.Debug("MainDebugger-2");
+            }
+            catch (Exception exception)
+            {
+                logger.Error(exception.Message);
+                logger.Error(exception.StackTrace);
+                logger.Error(exception, "Stopped program because of exception");
+                throw;
+            }
+            finally
+            {
+                LogManager.Shutdown();
+                logger.Debug("MainDebugger-3");
+            }
+        }
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+            .UseServiceProviderFactory(new AutofacServiceProviderFactory())
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<Startup>()
+                .UseKestrel(options =>
+                {
+                    options.Limits.MaxRequestBodySize = long.MaxValue;
+                });
+            })
+              .ConfigureLogging(logging =>
+              {
+                  logging.ClearProviders();
+                  logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+              })
+              .UseNLog();
+    }
+}
