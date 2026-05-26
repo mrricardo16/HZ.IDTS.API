@@ -420,7 +420,8 @@ namespace HZ.IDTSCore.Interfaces.Service
             UserSession sessionUser = GetSessionInfo();
 
             ApiResult apiR = new ApiResult();
-            string result = WebApiManager.HttpPost(mdg, "api/Power/GetMenuButtonPower", JsonConvert.SerializeObject(new { cName = pageName }), ref apiR, sessionUser.TokenId);
+            string path = "api/Power/GetMenuButtonPower?cName=" + Uri.EscapeDataString(pageName ?? string.Empty);
+            string result = WebApiManager.HttpGet(mdg, path, ref apiR, "", sessionUser.TokenId);
 
             if (!apiR.IsSuccess)
                 throw new Exception(apiR.Message);
