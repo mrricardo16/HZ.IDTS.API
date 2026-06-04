@@ -52,6 +52,15 @@ namespace HZ.IDTSCore.Interfaces
         /// <returns></returns>
         int Add(List<T> parm, SqlSugarClient tranDb = null);
 
+        /// <summary>
+        /// 批量添加数据V2。
+        /// </summary>
+        /// <param name="parm">待添加数据</param>
+        /// <param name="batchSize">每批数量</param>
+        /// <param name="tranDb">事务数据库对象</param>
+        /// <returns>影响行数</returns>
+        int AddBatchV2(List<T> parm, int batchSize = 500, SqlSugarClient tranDb = null);
+
         #endregion
 
         #region 查询操作
@@ -94,6 +103,15 @@ namespace HZ.IDTSCore.Interfaces
         /// <returns></returns>
         List<T> GetAll();
 
+        /// <summary>
+        /// 查询指定数量数据V2。
+        /// </summary>
+        /// <param name="take">返回数量上限</param>
+        /// <param name="order">排序表达式</param>
+        /// <param name="orderEnum">Asc/Desc</param>
+        /// <returns>数据列表</returns>
+        List<T> GetAllV2(int take = 1000, Expression<Func<T, object>> order = null, string orderEnum = "Asc");
+
 
         /// <summary>
         /// 获得一条数据
@@ -119,6 +137,15 @@ namespace HZ.IDTSCore.Interfaces
         PagedInfo<T> GetPages(Expression<Func<T, bool>> where, PageParm parm);
 
         /// <summary>
+        /// 根据条件查询分页数据V2。
+        /// </summary>
+        /// <param name="where">查询条件</param>
+        /// <param name="parm">分页参数</param>
+        /// <param name="allowOrderFields">允许排序字段</param>
+        /// <returns>分页数据</returns>
+        PagedInfo<T> GetPagesV2(Expression<Func<T, bool>> where, PageParm parm, List<string> allowOrderFields = null);
+
+        /// <summary>
         /// 根据条件查询分页数据
         /// </summary>
         /// <param name="where"></param>
@@ -133,6 +160,16 @@ namespace HZ.IDTSCore.Interfaces
         /// <param name="where">条件表达式树</param>
         /// <returns></returns>
         //List<T> GetWhere(Expression<Func<T, bool>> where);
+
+        /// <summary>
+        /// 根据条件查询指定数量数据V2。
+        /// </summary>
+        /// <param name="where">查询条件</param>
+        /// <param name="take">返回数量上限</param>
+        /// <param name="order">排序表达式</param>
+        /// <param name="orderEnum">Asc/Desc</param>
+        /// <returns>数据列表</returns>
+        List<T> GetWhereV2(Expression<Func<T, bool>> where, int take = 1000, Expression<Func<T, object>> order = null, string orderEnum = "Asc");
 
         /// <summary>
         /// 根据条件查询数据
@@ -160,6 +197,15 @@ namespace HZ.IDTSCore.Interfaces
         /// <param name="parm">T</param>
         /// <returns></returns>
         //int Update(List<T> parm);
+
+        /// <summary>
+        /// 批量修改V2。
+        /// </summary>
+        /// <param name="parm">待修改数据</param>
+        /// <param name="batchSize">每批数量</param>
+        /// <param name="tranDb">事务数据库对象</param>
+        /// <returns>影响行数</returns>
+        int UpdateBatchV2(List<T> parm, int batchSize = 500, SqlSugarClient tranDb = null);
 
 
         /// <summary>
@@ -189,6 +235,15 @@ namespace HZ.IDTSCore.Interfaces
         /// <param name="parm">string</param>
         /// <returns></returns>
         //int Delete(object[] ids);
+
+        /// <summary>
+        /// 批量删除V2。
+        /// </summary>
+        /// <param name="ids">主键数组</param>
+        /// <param name="batchSize">每批数量</param>
+        /// <param name="tranDb">事务数据库对象</param>
+        /// <returns>影响行数</returns>
+        int DeleteBatchV2(object[] ids, int batchSize = 500, SqlSugarClient tranDb = null);
 
         /// <summary>
         /// 根据条件删除一条或多条数据

@@ -54,5 +54,44 @@ namespace HZ.IDTSCore.Api.Instance
             catch { }
             return result;
         }
+
+
+        #region PublishStocksInfo V2 -20260507 优化性能，减少锁粒度和重复查询
+        private readonly object _goodsLock = new object();
+        private readonly Dictionary<string, StockViewModel> _goodsMap = new Dictionary<string, StockViewModel>();
+        private static string GetKey(StockViewModel stock)
+        {
+            return $"{stock.stockCode}|{stock.areaCode}|{stock.locationCode}";
+        }
+
+        public bool PublishStocksInfoV2(List<StockViewModel> stocks)
+        {
+            if (stocks == null || stocks.Count == 0) return true;
+
+            lock (_goodsLock)
+            {
+                foreach (var stock in stocks)
+                {
+                    var key = GetKey(stock);
+                    if (_goodsMap.TryGetValue(key, out var cacheStock))
+                    {
+                        cacheStock.storageState = stock.storageState;
+                        cacheStock.state = stock.state;
+                        cacheStock.itemRow = stock.itemRow;
+                        cacheStock.rackInfo = stock.rackInfo; // 如果前端需要料架/料箱变化，这里也应同步
+                    }
+                    else
+                    {
+                        _goodsMap[key] = stock;
+                    }
+                }
+
+                GoodsList = _goodsMap.Values.ToList();
+            }
+
+            return true;
+        }
+
+        #endregion
     }
 }

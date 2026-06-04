@@ -4,15 +4,21 @@ using HZ.CommonUtil.Helpers;
 using HZ.DbHelper;
 using HZ.IDTSCore.Api.Authorization;
 using HZ.IDTSCore.Api.Global;
+using HZ.IDTSCore.Api.Instance;
 using HZ.IDTSCore.Api.Middleware;
 using HZ.IDTSCore.Common.Const;
+using HZ.IDTSCore.Common.Helpers;
 using HZ.IDTSCore.Interfaces;
+using HZ.IDTSCore.Model.Entity.SenarioTesting;
+using HZ.IDTSCore.Model.Entity.Sys;
 using HZ.iWCS.MData.Core;
 using MapsterMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,13 +29,8 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Linq;
-using HZ.IDTSCore.Api.Instance;
-using HZ.IDTSCore.Model.Entity.Sys;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using HZ.IDTSCore.Model.Entity.SenarioTesting;
+using System.Reflection;
 
 namespace HZ.IDTSCore.Api
 {
@@ -117,7 +118,7 @@ namespace HZ.IDTSCore.Api
                         .WithOrigins(new string[1] { "*" })
                         .AllowAnyHeader()
                         .AllowAnyMethod()
-                        .WithMethods("GET", "POST", "PUT", "DELETE");   
+                        .WithMethods("GET", "POST", "PUT", "DELETE");
                     });
                     logger.Debug("StartupDebugger-LimitRequests-1");
                 }
@@ -166,7 +167,7 @@ namespace HZ.IDTSCore.Api
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Xml 文件丢失，请检查并拷贝。\n{ ex.Message}");
+                        Console.WriteLine($"Xml 文件丢失，请检查并拷贝。\n{ex.Message}");
                     }
 
                     // 开启加权小锁
@@ -310,14 +311,20 @@ namespace HZ.IDTSCore.Api
             }
             catch { }
 
+            #region 优化项
+            // 时间：2026-05-29
+            // 原逻辑：逐个执行 GoodscommandDriver.Instance.RefreshStockItemInformation。
+            // 问题：货位设备数量较多时串行执行耗时长，会拖慢 API 站点启动。
             try
             {
                 foreach (var goodsequipment in GoodsequipmentList)
                 {
-                    GoodscommandDriver.Instance.RefreshStockItemInformation(goodsequipment.cn_guid);
+                    GoodscommandDriver.Instance.RefreshStockItemInformationV2(goodsequipment.cn_guid);
                 }
             }
             catch { }
+            #endregion
+
             if (dbConnectioned)
             {
                 //添加托管线程
@@ -334,6 +341,11 @@ namespace HZ.IDTSCore.Api
                 services.AddHostedService<LogsThread>();
 
             }
+
+            //WMS Redis 初始化
+            WMSRedisServer.Initalize();
+            ////注入 Redis 订阅后台服务
+            services.AddHostedService<RedisSubscribeHostedService>();
             logger.Debug("StartupDebugger-8");
         }
 

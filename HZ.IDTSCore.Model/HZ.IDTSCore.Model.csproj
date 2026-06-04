@@ -34,12 +34,8 @@
     <PackageReference Include="sqlSugarCore" Version="5.0.9.1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HZ.CommonUtil\HZ.CommonUtil.csproj" />
     <ProjectReference Include="..\HZ.IDTSCore.Common\HZ.IDTSCore.Common.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="HZ.CommonUtil">
-      <HintPath>..\LIB\HZ.CommonUtil.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

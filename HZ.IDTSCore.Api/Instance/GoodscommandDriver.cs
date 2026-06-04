@@ -1,5 +1,6 @@
-Ôªøusing HZ.IDTSCore.Api.Controllers;
+using HZ.IDTSCore.Api.Controllers;
 using HZ.IDTSCore.Api.Global;
+using HZ.CommonUtil.Helpers;
 using HZ.IDTSCore.Interfaces;
 using HZ.IDTSCore.Interfaces.IService.SenarioTesting;
 using HZ.IDTSCore.Interfaces.Service.Equipment;
@@ -16,6 +17,7 @@ using MongoDB.Driver;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,82 +41,9 @@ namespace HZ.IDTSCore.Api.Instance
             }
         }
 
-        //        #region Âà§ÂÆöË¥ß‰Ωç‰ø°ÊÅØÊòØÂê¶‰øÆÊîπ
-        //        /// <summary>
-        //        /// Âà§ÂÆöË¥ß‰Ωç‰ø°ÊÅØÊòØÂê¶‰øÆÊîπ
-        //        /// </summary>
-        //        /// <param name="stockItemInformationList"></param>
-        //        /// <param name="stockViewModelList"></param>
-        //        /// <param name="goodsequipmentGuid"></param>
-        //        /// Âè™ËÄÉËôëÂ¢ûÊîπÔºåÊ≤°ËÄÉËôëÂà†
-        //        /// <returns></returns>
-        //        public bool WatchStockItemInformation(out List<StockItemInformation> stockItemInformationList, List<StockViewModel> stockViewModelList, string goodsequipmentGuid)
-        //        {
-        //            bool isChange = false;
-        //            stockItemInformationList = new List<StockItemInformation>();
-        //            foreach (var stockViewModel in stockViewModelList)
-        //            {
-        //                var stockItemInformationBuilder = Builders<StockItemInformation>.Filter;
-        //                var updateFilter = stockItemInformationBuilder.And(stockItemInformationBuilder.Eq("goodsequipmentGuid", goodsequipmentGuid), stockItemInformationBuilder.Eq("locationCode", stockViewModel.locationCode));
-        //                StockItemInformation updatestock = MongoDBSingleton.Instance.FindOneFilter(updateFilter);
-        //                if (updatestock is null)
-        //                {
-        //                    StockItemInformation stockItemInformation = new StockItemInformation();
-        //                    stockItemInformation.goodsequipmentGuid = goodsequipmentGuid;
-        //                    stockItemInformation.stockCode = stockViewModel.stockCode;
-        //                    stockItemInformation.areaCode = stockViewModel.areaCode;
-        //                    stockItemInformation.locationCode = stockViewModel.locationCode;
-        //                    stockItemInformation.locationType = stockViewModel.locationType;
-        //                    stockItemInformation.state = stockViewModel.state;
-        //                    stockItemInformation.storageState = stockViewModel.storageState;
-        //                    List<ItemRowInformation> itemRowInformationList = new List<ItemRowInformation>();
-        //                    foreach (var item in stockViewModel.itemRow)
-        //                    {
-        //                        ItemRowInformation itemRowInformation = new ItemRowInformation();
-        //                        itemRowInformation.goodsequipmentGuid = goodsequipmentGuid;
-        //                        itemRowInformation.rowColLayer = stockViewModel.locationCode;
-        //                        itemRowInformation.itemCode = item.itemCode;
-        //                        itemRowInformation.itemName = item.itemName;
-        //                        itemRowInformation.trayCode = item.trayCode;
-        //                        itemRowInformation.remarks = item.remarks;
-        //                        itemRowInformation.ext1 = item.ext1;
-        //                        itemRowInformation.ext2 = item.ext2;
-        //                        itemRowInformationList.Add(itemRowInformation)
-        //;
-        //                    }
-        //                    stockItemInformation.itemRow = itemRowInformationList;
-        //                    stockItemInformationList.Add(stockItemInformation);
-        //                    isChange = true;
-        //                }
-        //                else
-        //                {
-        //                    if (updatestock.state != stockViewModel.state)
-        //                    {
-        //                        updatestock.state = stockViewModel.state;
-        //                        isChange = true;
-        //                    }
-        //                    if (updatestock.storageState != stockViewModel.storageState)
-        //                    {
-        //                        updatestock.storageState = stockViewModel.storageState;
-        //                        isChange = true;
-        //                    }
-        //                    List<ItemRowInformation> itemRowViewModelList = updatestock.itemRow;
-        //                    if (WatchItemRow(ref itemRowViewModelList, stockViewModel.itemRow, goodsequipmentGuid, stockViewModel.locationCode))
-        //                    {
-        //                        updatestock.itemRow = itemRowViewModelList;
-        //                        isChange = true;
-        //                    }
-        //                    stockItemInformationList.Add(updatestock);
-        //                }
-
-        //            }
-        //            return isChange;
-        //        }
-        //        #endregion
-
-        #region Âà∑Êñ∞ÊåáÂÆöË¥ß‰ΩçËÆæÂ§áMongoÂ∫ì‰Ωç‰ø°ÊÅØ
+        #region À¢–¬÷∏∂®ªıŒª…Ë±∏Mongoø‚Œª–≈œ¢
         /// <summary>
-        /// Âà∑Êñ∞ÊåáÂÆöË¥ß‰ΩçËÆæÂ§áMongoÂ∫ì‰Ωç‰ø°ÊÅØ
+        /// À¢–¬÷∏∂®ªıŒª…Ë±∏Mongoø‚Œª–≈œ¢
         /// </summary>
         /// <param name="goodsequipmentguid"></param>
         /// <returns></returns>
@@ -124,7 +53,7 @@ namespace HZ.IDTSCore.Api.Instance
             {
                 token = "",
                 splitDbCode = ""
-            }).GetWhere(it => it.cn_s_goodscommand_goodsequipguid == goodsequipmentguid && (it.cn_s_goodscommand_type == "ÂàùÂßãÂåñ" || it.cn_s_goodscommand_type == "‰∏öÂä°"));
+            }).GetWhere(it => it.cn_s_goodscommand_goodsequipguid == goodsequipmentguid && (it.cn_s_goodscommand_type == "≥ı ºªØ" || it.cn_s_goodscommand_type == "“µŒÒ"));
             List<RefreshStock> refreshStockList = new List<RefreshStock>();
             foreach (var goodscommand in goodscommandList)
             {
@@ -154,7 +83,7 @@ namespace HZ.IDTSCore.Api.Instance
                 {
                     RefreshStock refreshStock = new RefreshStock();
                     refreshStock.commandSource = goodscommand.cn_s_goodscommand_type;
-                    if (goodscommand.cn_s_goodscommand_type == "ÂàùÂßãÂåñ")
+                    if (goodscommand.cn_s_goodscommand_type == "≥ı ºªØ")
                     {
                         refreshStock.busGuid = "";
                     }
@@ -185,9 +114,299 @@ namespace HZ.IDTSCore.Api.Instance
         }
         #endregion
 
-        #region Âà§ÂÆöË¥ß‰Ωç‰ø°ÊÅØÊòØÂê¶‰øÆÊîπ
+        #region À¢–¬÷∏∂®ªıŒª…Ë±∏Mongoø‚Œª–≈œ¢V2
         /// <summary>
-        /// Âà§ÂÆöË¥ß‰Ωç‰ø°ÊÅØÊòØÂê¶‰øÆÊîπ
+        /// À¢–¬÷∏∂®ªıŒª…Ë±∏Mongoø‚Œª–≈œ¢V2°£
+        ///  ±º‰£∫2026-05-29
+        /// ”≈ªØƒ⁄»›£∫‘≠∞Ê±æ‘⁄WatchStockItemInformation÷–∞¥ªıŒª÷ÃıFindOneFilter≤È—ØMongoDB£¨ªıŒª ˝¡øº∏ÕÚ ±ª·≤˙…˙º∏ÕÚ¥ŒMongoDB«Î«Û°£
+        /// V2∞Ê±æ“ª¥Œ–‘»°≥ˆ∏√ªıŒª…Ë±∏“—”–ªıŒª ˝æ›£¨‘⁄ƒ⁄¥Ê÷–”√Dictionary∞¥locationCode∆•≈‰£¨÷ª±£¡Ù±ÿ“™µƒ–¬‘ˆ°¢–ﬁ∏ƒ°¢…æ≥˝≤Ÿ◊˜°£
+        /// ◊¢“‚£∫‘≠RefreshStockItemInformation°¢WatchStockItemInformation°¢WatchItemRowæ˘≤ª∏ƒ∂Ø£¨V2∑Ω∑®∂¿¡¢±£¡Ù°£
+        /// </summary>
+        /// <param name="goodsequipmentguid">ªıŒª…Ë±∏Œ®“ª±Í ∂</param>
+        public void RefreshStockItemInformationV2(string goodsequipmentguid)
+        {
+            List<tn_dts_goodscommand> goodscommandList = new Interfaces.Service.SenarioTesting.GoodscommandService(new DbHelper.SessionInfo()
+            {
+                token = "",
+                splitDbCode = ""
+            }).GetWhere(it => it.cn_s_goodscommand_goodsequipguid == goodsequipmentguid && (it.cn_s_goodscommand_type == "≥ı ºªØ" || it.cn_s_goodscommand_type == "“µŒÒ"));
+
+            List<RefreshStock> refreshStockList = new List<RefreshStock>();
+            foreach (var goodscommand in goodscommandList)
+            {
+                LocationRealMonitorViewModel locationRealMonitorViewModel = DeserializeLocationRealMonitorV2(goodscommand.cn_s_goodscommand_json);
+                foreach (var item in locationRealMonitorViewModel.stock)
+                {
+                    RefreshStock refreshStock = new RefreshStock();
+                    refreshStock.commandSource = goodscommand.cn_s_goodscommand_type;
+                    refreshStock.busGuid = goodscommand.cn_s_goodscommand_type == "≥ı ºªØ" ? "" : goodscommand.cn_guid;
+                    refreshStock.stockViewModel = item;
+                    refreshStockList.Add(refreshStock);
+                }
+            }
+
+            List<StockItemInformation> stockItemInformationAddListV2 = null;
+            List<StockItemInformation> stockItemInformationUpdateListV2 = null;
+            List<ObjectId> stockItemInformationDeleteIdListV2 = null;
+            if (WatchStockItemInformationV2(out stockItemInformationAddListV2, out stockItemInformationUpdateListV2, out stockItemInformationDeleteIdListV2, refreshStockList, goodsequipmentguid))
+            {
+                var stockItemInformationBuilder = Builders<StockItemInformation>.Filter;
+
+                // …æ≥˝ π”√DeleteMany“ª¥ŒÃ·Ωª£¨±‹√‚º∏ÕÚ∏ˆªıŒª÷ÃıDelete°£
+                if (stockItemInformationDeleteIdListV2.Count > 0)
+                {
+                    var deleteFilterV2 = stockItemInformationBuilder.In("_id", stockItemInformationDeleteIdListV2);
+                    MongoDBSingleton.Instance.DeleteMany<StockItemInformation>(deleteFilterV2);
+                }
+
+                // –¬‘ˆ π”√InsertMany“ª¥Œ≈˙¡ø–¥»Î£¨ºı…ŸMongoDBÕ¯¬ÁÕ˘∑µ¥Œ ˝°£
+                if (stockItemInformationAddListV2.Count > 0)
+                {
+                    MongoDBSingleton.Instance.InsertMany<StockItemInformation>(stockItemInformationAddListV2);
+                }
+
+                // √ø∏ˆªıŒªµƒ∏¸–¬ƒ⁄»›≤ªÕ¨£¨UpdateManay÷ªƒ‹∂‘Õ¨“ª≈˙Œƒµµ…Ë÷√Õ¨“ª∑›UpdateDefinition£¨’‚¿Ô≤ªƒ‹÷±Ω”∫œ≤¢≥…“ª¥ŒUpdateManay°£
+                // V2“—»•µÙ÷ªıŒªFindOneFilter£¨ £”‡∏¸–¬÷ª∂‘’Ê’˝±‰ªØµƒ ˝æ›÷¥––£¨’˚ÃÂ∫ƒ ±ª·√˜œ‘µÕ”⁄‘≠∞Ê±æ°£
+                foreach (var stockItemInformationUpdateV2 in stockItemInformationUpdateListV2)
+                {
+                    MongoDBSingleton.Instance.Update<StockItemInformation>(stockItemInformationUpdateV2, stockItemInformationUpdateV2._id.ToString());
+                }
+            }
+        }
+        #endregion
+
+        #region ∑¥–Ú¡–ªØªıŒªÕ¨≤ΩModelV2
+        /// <summary>
+        /// ∑¥–Ú¡–ªØªıŒªÕ¨≤ΩModelV2°£
+        /// </summary>
+        /// <param name="json">ªıŒªÕ¨≤ΩJson</param>
+        /// <returns>ªıŒªÕ¨≤ΩModel</returns>
+        private LocationRealMonitorViewModel DeserializeLocationRealMonitorV2(string json)
+        {
+            LocationRealMonitorViewModel locationRealMonitorViewModel = new LocationRealMonitorViewModel();
+            locationRealMonitorViewModel.stock = new List<StockViewModel>();
+            try
+            {
+                if (!string.IsNullOrEmpty(json))
+                {
+                    locationRealMonitorViewModel = JsonConvert.DeserializeObject<LocationRealMonitorViewModel>(json);
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+                if (locationRealMonitorViewModel is null)
+                {
+                    locationRealMonitorViewModel = new LocationRealMonitorViewModel();
+                }
+                if (locationRealMonitorViewModel.stock is null)
+                {
+                    locationRealMonitorViewModel.stock = new List<StockViewModel>();
+                }
+            }
+            return locationRealMonitorViewModel;
+        }
+        #endregion
+
+        #region ≈–∂®ªıŒª–≈œ¢ «∑Ò–ﬁ∏ƒV2
+        /// <summary>
+        /// ≈–∂®ªıŒª–≈œ¢ «∑Ò–ﬁ∏ƒV2°£
+        ///  ±º‰£∫2026-05-29
+        /// ”≈ªØƒ⁄»›£∫‘≠∞Ê±æ√ø∏ˆªıŒª∂ºµ˜”√FindOneFilter≤È—ØMongoDB£ªV2“ª¥ŒFindList»°≥ˆæ… ˝æ›£¨»ª∫Û”√Dictionary‘⁄ƒ⁄¥Ê÷–∞¥locationCode∆•≈‰°£
+        /// </summary>
+        /// <param name="stockItemInformationAddListV2">–Ë“™–¬‘ˆµƒªıŒª¡–±Ì</param>
+        /// <param name="stockItemInformationUpdateListV2">–Ë“™∏¸–¬µƒªıŒª¡–±Ì</param>
+        /// <param name="stockItemInformationDeleteIdListV2">–Ë“™…æ≥˝µƒMongoDB÷˜º¸¡–±Ì</param>
+        /// <param name="refreshStockList">÷∏¡ÓΩ‚Œˆ≥ˆµƒªıŒª ˝æ›</param>
+        /// <param name="goodsequipmentGuid">ªıŒª…Ë±∏Œ®“ª±Í ∂</param>
+        /// <returns> «∑Ò¥Ê‘⁄–¬‘ˆ°¢–ﬁ∏ƒªÚ…æ≥˝</returns>
+        public bool WatchStockItemInformationV2(out List<StockItemInformation> stockItemInformationAddListV2, out List<StockItemInformation> stockItemInformationUpdateListV2, out List<ObjectId> stockItemInformationDeleteIdListV2, List<RefreshStock> refreshStockList, string goodsequipmentGuid)
+        {
+            stockItemInformationAddListV2 = new List<StockItemInformation>();
+            stockItemInformationUpdateListV2 = new List<StockItemInformation>();
+            stockItemInformationDeleteIdListV2 = new List<ObjectId>();
+
+            if (refreshStockList is null)
+            {
+                refreshStockList = new List<RefreshStock>();
+            }
+
+            var stockItemInformationBuilder = Builders<StockItemInformation>.Filter;
+            var aGoodsequipmentFilter = stockItemInformationBuilder.Eq("goodsequipmentGuid", goodsequipmentGuid);
+
+            // ÷ª≤È—Ø“ª¥ŒMongoDB£¨±‹√‚ªıŒª ˝¡ø¥Û ±≥ˆœ÷º∏ÕÚ¥ŒFindOneFilter°£
+            List<StockItemInformation> oldGoodsequipmentStockListV2 = MongoDBSingleton.Instance.FindList<StockItemInformation>(aGoodsequipmentFilter);
+            if (oldGoodsequipmentStockListV2 is null)
+            {
+                oldGoodsequipmentStockListV2 = new List<StockItemInformation>();
+            }
+
+            Dictionary<string, StockItemInformation> oldStockDictionaryV2 = new Dictionary<string, StockItemInformation>();
+            foreach (var oldGoodsequipmentStockV2 in oldGoodsequipmentStockListV2)
+            {
+                if (oldGoodsequipmentStockV2 is null || string.IsNullOrEmpty(oldGoodsequipmentStockV2.locationCode))
+                {
+                    continue;
+                }
+                if (!oldStockDictionaryV2.ContainsKey(oldGoodsequipmentStockV2.locationCode))
+                {
+                    oldStockDictionaryV2.Add(oldGoodsequipmentStockV2.locationCode, oldGoodsequipmentStockV2);
+                }
+            }
+
+            Dictionary<string, StockItemInformation> addStockDictionaryV2 = new Dictionary<string, StockItemInformation>();
+            HashSet<string> currentLocationCodeSetV2 = new HashSet<string>();
+            HashSet<ObjectId> updateIdSetV2 = new HashSet<ObjectId>();
+
+            foreach (var refreshStockV2 in refreshStockList)
+            {
+                if (refreshStockV2 is null || refreshStockV2.stockViewModel is null || string.IsNullOrEmpty(refreshStockV2.stockViewModel.locationCode))
+                {
+                    continue;
+                }
+
+                StockViewModel stockViewModelV2 = refreshStockV2.stockViewModel;
+                currentLocationCodeSetV2.Add(stockViewModelV2.locationCode);
+
+                StockItemInformation oldStockItemInformationV2 = null;
+                if (oldStockDictionaryV2.TryGetValue(stockViewModelV2.locationCode, out oldStockItemInformationV2))
+                {
+                    if (ApplyStockItemInformationV2(oldStockItemInformationV2, refreshStockV2, goodsequipmentGuid, stockViewModelV2)
+                        && !updateIdSetV2.Contains(oldStockItemInformationV2._id))
+                    {
+                        stockItemInformationUpdateListV2.Add(oldStockItemInformationV2);
+                        updateIdSetV2.Add(oldStockItemInformationV2._id);
+                    }
+                    continue;
+                }
+
+                StockItemInformation addStockItemInformationV2 = null;
+                if (addStockDictionaryV2.TryGetValue(stockViewModelV2.locationCode, out addStockItemInformationV2))
+                {
+                    // Õ¨“ª≈˙ ˝æ›÷–Õ¨“ª∏ˆlocationCode÷ÿ∏¥≥ˆœ÷ ±£¨ºÃ–¯∏¥”√¥˝–¬‘ˆ∂‘œÛ£¨±‹√‚≤Â»Î÷ÿ∏¥ªıŒª°£
+                    ApplyStockItemInformationV2(addStockItemInformationV2, refreshStockV2, goodsequipmentGuid, stockViewModelV2);
+                    continue;
+                }
+
+                addStockItemInformationV2 = BuildStockItemInformationV2(refreshStockV2, goodsequipmentGuid, stockViewModelV2);
+                stockItemInformationAddListV2.Add(addStockItemInformationV2);
+                addStockDictionaryV2.Add(stockViewModelV2.locationCode, addStockItemInformationV2);
+            }
+
+            foreach (var oldGoodsequipmentStockV2 in oldGoodsequipmentStockListV2)
+            {
+                if (oldGoodsequipmentStockV2 is null || currentLocationCodeSetV2.Contains(oldGoodsequipmentStockV2.locationCode))
+                {
+                    continue;
+                }
+                stockItemInformationDeleteIdListV2.Add(oldGoodsequipmentStockV2._id);
+            }
+
+            return stockItemInformationAddListV2.Count > 0 || stockItemInformationUpdateListV2.Count > 0 || stockItemInformationDeleteIdListV2.Count > 0;
+        }
+        #endregion
+
+        #region ππΩ®ªıŒª–≈œ¢V2
+        /// <summary>
+        /// ππΩ®ªıŒª–≈œ¢V2°£
+        /// </summary>
+        private StockItemInformation BuildStockItemInformationV2(RefreshStock refreshStockV2, string goodsequipmentGuid, StockViewModel stockViewModelV2)
+        {
+            StockItemInformation stockItemInformationV2 = new StockItemInformation();
+            stockItemInformationV2.goodsequipmentGuid = goodsequipmentGuid;
+            stockItemInformationV2.busGuid = refreshStockV2.busGuid;
+            stockItemInformationV2.commandSource = refreshStockV2.commandSource;
+            stockItemInformationV2.stockCode = stockViewModelV2.stockCode;
+            stockItemInformationV2.areaCode = stockViewModelV2.areaCode;
+            stockItemInformationV2.locationCode = stockViewModelV2.locationCode;
+            stockItemInformationV2.locationType = stockViewModelV2.locationType;
+            stockItemInformationV2.state = stockViewModelV2.state;
+            stockItemInformationV2.storageState = stockViewModelV2.storageState;
+            stockItemInformationV2.itemRow = BuildItemRowInformationListV2(stockViewModelV2.itemRow, goodsequipmentGuid, stockViewModelV2.locationCode);
+            return stockItemInformationV2;
+        }
+        #endregion
+
+        #region ”¶”√ªıŒª±‰∏¸V2
+        /// <summary>
+        /// ”¶”√ªıŒª±‰∏¸V2°£
+        /// </summary>
+        private bool ApplyStockItemInformationV2(StockItemInformation stockItemInformationV2, RefreshStock refreshStockV2, string goodsequipmentGuid, StockViewModel stockViewModelV2)
+        {
+            bool isChangeV2 = false;
+
+            if (stockItemInformationV2.commandSource != refreshStockV2.commandSource && refreshStockV2.commandSource == "≥ı ºªØ")
+            {
+                stockItemInformationV2.commandSource = refreshStockV2.commandSource;
+                stockItemInformationV2.busGuid = "";
+                isChangeV2 = true;
+            }
+            if (stockItemInformationV2.commandSource != refreshStockV2.commandSource && refreshStockV2.commandSource == "“µŒÒ")
+            {
+                stockItemInformationV2.commandSource = refreshStockV2.commandSource;
+                stockItemInformationV2.busGuid = refreshStockV2.busGuid;
+                isChangeV2 = true;
+            }
+            if (stockItemInformationV2.state != stockViewModelV2.state)
+            {
+                stockItemInformationV2.state = stockViewModelV2.state;
+                isChangeV2 = true;
+            }
+            if (stockItemInformationV2.storageState != stockViewModelV2.storageState)
+            {
+                stockItemInformationV2.storageState = stockViewModelV2.storageState;
+                isChangeV2 = true;
+            }
+
+            List<ItemRowInformation> itemRowInformationListV2 = stockItemInformationV2.itemRow;
+            if (WatchItemRowV2(ref itemRowInformationListV2, stockViewModelV2.itemRow, goodsequipmentGuid, stockViewModelV2.locationCode))
+            {
+                stockItemInformationV2.itemRow = itemRowInformationListV2;
+                isChangeV2 = true;
+            }
+
+            return isChangeV2;
+        }
+        #endregion
+
+        #region ππΩ®ŒÔ¡œ–≈œ¢¡–±ÌV2
+        /// <summary>
+        /// ππΩ®ŒÔ¡œ–≈œ¢¡–±ÌV2°£
+        /// </summary>
+        private List<ItemRowInformation> BuildItemRowInformationListV2(List<ItemRowViewModel> itemRowViewModelListV2, string goodsequipmentGuid, string rowColLayer)
+        {
+            List<ItemRowInformation> itemRowInformationListV2 = new List<ItemRowInformation>();
+            if (itemRowViewModelListV2 is null)
+            {
+                return itemRowInformationListV2;
+            }
+
+            foreach (var itemV2 in itemRowViewModelListV2)
+            {
+                if (itemV2 is null)
+                {
+                    continue;
+                }
+                ItemRowInformation itemRowInformationV2 = new ItemRowInformation();
+                itemRowInformationV2.goodsequipmentGuid = goodsequipmentGuid;
+                itemRowInformationV2.rowColLayer = rowColLayer;
+                itemRowInformationV2.itemCode = itemV2.itemCode;
+                itemRowInformationV2.itemName = itemV2.itemName;
+                itemRowInformationV2.trayCode = itemV2.trayCode;
+                itemRowInformationV2.remarks = itemV2.remarks;
+                itemRowInformationV2.ext1 = itemV2.ext1;
+                itemRowInformationV2.ext2 = itemV2.ext2;
+                itemRowInformationListV2.Add(itemRowInformationV2);
+            }
+            return itemRowInformationListV2;
+        }
+        #endregion
+        #region ≈–∂®ªıŒª–≈œ¢ «∑Ò–ﬁ∏ƒ
+        /// <summary>
+        /// ≈–∂®ªıŒª–≈œ¢ «∑Ò–ﬁ∏ƒ
         /// </summary>
         /// <param name="stockItemInformationList"></param>
         /// <param name="refreshStockList"></param>
@@ -240,13 +459,13 @@ namespace HZ.IDTSCore.Api.Instance
                 }
                 else
                 {
-                    if (updatestock.commandSource != refreshStock.commandSource && refreshStock.commandSource == "ÂàùÂßãÂåñ")
+                    if (updatestock.commandSource != refreshStock.commandSource && refreshStock.commandSource == "≥ı ºªØ")
                     {
                         updatestock.commandSource = refreshStock.commandSource;
                         updatestock.busGuid = "";
                         isChange = true;
                     }
-                    if (updatestock.commandSource != refreshStock.commandSource && refreshStock.commandSource == "‰∏öÂä°")
+                    if (updatestock.commandSource != refreshStock.commandSource && refreshStock.commandSource == "“µŒÒ")
                     {
                         updatestock.commandSource = refreshStock.commandSource;
                         updatestock.busGuid = refreshStock.busGuid;
@@ -283,93 +502,9 @@ namespace HZ.IDTSCore.Api.Instance
         }
         #endregion
 
-        //        #region Âà§ÂÆöË¥ß‰Ωç‰ø°ÊÅØÊòØÂê¶‰øÆÊîπ
-        //        /// <summary>
-        //        /// Âà§ÂÆöË¥ß‰Ωç‰ø°ÊÅØÊòØÂê¶‰øÆÊîπ
-        //        /// </summary>
-        //        /// <param name="stockItemInformationList"></param>
-        //        /// <param name="stockViewModelList"></param>
-        //        /// <param name="goodsequipmentGuid"></param>
-        //        /// <returns></returns>
-        //        public bool WatchStockItemInformation(out List<StockItemInformation> stockItemInformationList, List<StockViewModel> stockViewModelList, string goodsequipmentGuid)
-        //        {
-        //            bool isChange = false;
-        //            var stockItemInformationBuilder = Builders<StockItemInformation>.Filter;
-        //            stockItemInformationList = new List<StockItemInformation>();
-        //            List<StockItemInformation> stockItemInformationNoDeleteList = new List<StockItemInformation>();
-        //            var aGoodsequipmentFilter = stockItemInformationBuilder.Eq("goodsequipmentGuid", goodsequipmentGuid);
-        //            List<StockItemInformation> oldGoodsequipmentStockList = MongoDBSingleton.Instance.FindList(aGoodsequipmentFilter);
-        //            foreach (var stockViewModel in stockViewModelList)
-        //            {
-        //                var updateFilter = stockItemInformationBuilder.And(stockItemInformationBuilder.Eq("goodsequipmentGuid", goodsequipmentGuid), stockItemInformationBuilder.Eq("locationCode", stockViewModel.locationCode));
-        //                StockItemInformation updatestock = MongoDBSingleton.Instance.FindOneFilter(updateFilter);
-        //                if (updatestock is null)
-        //                {
-        //                    StockItemInformation stockItemInformation = new StockItemInformation();
-        //                    stockItemInformation.goodsequipmentGuid = goodsequipmentGuid;
-
-        //                    stockItemInformation.stockCode = stockViewModel.stockCode;
-        //                    stockItemInformation.areaCode = stockViewModel.areaCode;
-        //                    stockItemInformation.locationCode = stockViewModel.locationCode;
-        //                    stockItemInformation.locationType = stockViewModel.locationType;
-        //                    stockItemInformation.state = stockViewModel.state;
-        //                    stockItemInformation.storageState = stockViewModel.storageState;
-        //                    List<ItemRowInformation> itemRowInformationList = new List<ItemRowInformation>();
-        //                    foreach (var item in stockViewModel.itemRow)
-        //                    {
-        //                        ItemRowInformation itemRowInformation = new ItemRowInformation();
-        //                        itemRowInformation.goodsequipmentGuid = goodsequipmentGuid;
-        //                        itemRowInformation.rowColLayer = stockViewModel.locationCode;
-        //                        itemRowInformation.itemCode = item.itemCode;
-        //                        itemRowInformation.itemName = item.itemName;
-        //                        itemRowInformation.trayCode = item.trayCode;
-        //                        itemRowInformation.remarks = item.remarks;
-        //                        itemRowInformation.ext1 = item.ext1;
-        //                        itemRowInformation.ext2 = item.ext2;
-        //                        itemRowInformationList.Add(itemRowInformation)
-        //;
-        //                    }
-        //                    stockItemInformation.itemRow = itemRowInformationList;
-        //                    stockItemInformationList.Add(stockItemInformation);
-
-        //                    isChange = true;
-        //                }
-        //                else
-        //                {
-        //                    if (updatestock.state != stockViewModel.state)
-        //                    {
-        //                        updatestock.state = stockViewModel.state;
-        //                        isChange = true;
-        //                    }
-        //                    if (updatestock.storageState != stockViewModel.storageState)
-        //                    {
-        //                        updatestock.storageState = stockViewModel.storageState;
-        //                        isChange = true;
-        //                    }
-        //                    List<ItemRowInformation> itemRowViewModelList = updatestock.itemRow;
-        //                    if (WatchItemRow(ref itemRowViewModelList, stockViewModel.itemRow, goodsequipmentGuid, stockViewModel.locationCode))
-        //                    {
-        //                        updatestock.itemRow = itemRowViewModelList;
-        //                        isChange = true;
-        //                    }
-        //                    stockItemInformationList.Add(updatestock);
-        //                }
-        //            }
-        //            foreach (var oldGoodsequipmentStock in oldGoodsequipmentStockList)
-        //            {
-        //                StockItemInformation stockItemInformationLocationCode = stockItemInformationList.FirstOrDefault(it => it.locationCode == oldGoodsequipmentStock.locationCode);
-        //                if (stockItemInformationLocationCode is null)
-        //                {
-        //                    MongoDBSingleton.Instance.Delete<StockItemInformation>(oldGoodsequipmentStock._id.ToString());
-        //                }
-        //            }
-        //            return isChange;
-        //        }
-        //        #endregion
-
-        #region Âà§ÂÆöÁâ©Êñô‰ø°ÊÅØÊòØÂê¶‰øÆÊîπ
+        #region ≈–∂®ŒÔ¡œ–≈œ¢ «∑Ò–ﬁ∏ƒ
         /// <summary>
-        /// Âà§ÂÆöÁâ©Êñô‰ø°ÊÅØÊòØÂê¶‰øÆÊîπ
+        /// ≈–∂®ŒÔ¡œ–≈œ¢ «∑Ò–ﬁ∏ƒ
         /// </summary>
         /// <param name="itemRowInformationList"></param>
         /// <param name="itemRowViewModelList"></param>
@@ -444,16 +579,128 @@ namespace HZ.IDTSCore.Api.Instance
         }
         #endregion
 
-        #region Ëé∑ÂèñÊåáÂÆö‰ªìÂ∫ìÂ∫ìÂå∫ÊúÄÂ§ßÊéíÂàóÂ±Ç
+        #region ≈–∂®ŒÔ¡œ–≈œ¢ «∑Ò–ﬁ∏ƒV2
         /// <summary>
-        /// Ëé∑ÂèñÊåáÂÆö‰ªìÂ∫ìÂ∫ìÂå∫ÊúÄÂ§ßÊéíÂàóÂ±Ç
+        /// ≈–∂®ŒÔ¡œ–≈œ¢ «∑Ò–ﬁ∏ƒV2°£
+        ///  ±º‰£∫2026-05-29
+        /// ”≈ªØƒ⁄»›£∫‘≠∞Ê±æ√ø∏ˆŒÔ¡œ∂ºFirstOrDefault…®√Ëæ…ŒÔ¡œ¡–±Ì£ªV2Ω´æ…ŒÔ¡œ∞¥itemCode◊™≥…Dictionary£¨ºı…ŸŒÔ¡œ√˜œ∏±»∂‘∫ƒ ±°£
+        /// </summary>
+        /// <param name="itemRowInformationList">MongoDB÷–“—”–ŒÔ¡œ–≈œ¢</param>
+        /// <param name="itemRowViewModelList">Ω”ø⁄Json÷–µƒŒÔ¡œ–≈œ¢</param>
+        /// <param name="goodsequipmentGuid">ªıŒª…Ë±∏Œ®“ª±Í ∂</param>
+        /// <param name="rowColLayer">ªıŒª±‡¬Î</param>
+        /// <returns> «∑Ò¥Ê‘⁄ŒÔ¡œ–¬‘ˆ°¢–ﬁ∏ƒªÚ…æ≥˝</returns>
+        public bool WatchItemRowV2(ref List<ItemRowInformation> itemRowInformationList, List<ItemRowViewModel> itemRowViewModelList, string goodsequipmentGuid, string rowColLayer)
+        {
+            bool isChangeV2 = false;
+            if (itemRowInformationList is null)
+            {
+                itemRowInformationList = new List<ItemRowInformation>();
+            }
+            if (itemRowViewModelList is null)
+            {
+                itemRowViewModelList = new List<ItemRowViewModel>();
+            }
+
+            Dictionary<string, ItemRowInformation> oldItemRowDictionaryV2 = new Dictionary<string, ItemRowInformation>();
+            foreach (var itemRowInformationV2 in itemRowInformationList)
+            {
+                if (itemRowInformationV2 is null)
+                {
+                    continue;
+                }
+                string itemCodeV2 = itemRowInformationV2.itemCode ?? string.Empty;
+                if (!oldItemRowDictionaryV2.ContainsKey(itemCodeV2))
+                {
+                    oldItemRowDictionaryV2.Add(itemCodeV2, itemRowInformationV2);
+                }
+            }
+
+            List<ItemRowInformation> newItemRowInformationListV2 = new List<ItemRowInformation>();
+            HashSet<string> currentItemCodeSetV2 = new HashSet<string>();
+            foreach (var itemRowViewModelV2 in itemRowViewModelList)
+            {
+                if (itemRowViewModelV2 is null)
+                {
+                    continue;
+                }
+
+                string itemCodeV2 = itemRowViewModelV2.itemCode ?? string.Empty;
+                currentItemCodeSetV2.Add(itemCodeV2);
+
+                ItemRowInformation itemRowInformationV2 = null;
+                if (oldItemRowDictionaryV2.TryGetValue(itemCodeV2, out itemRowInformationV2))
+                {
+                    if (itemRowInformationV2.itemName != itemRowViewModelV2.itemName)
+                    {
+                        itemRowInformationV2.itemName = itemRowViewModelV2.itemName;
+                        isChangeV2 = true;
+                    }
+                    if (itemRowInformationV2.trayCode != itemRowViewModelV2.trayCode)
+                    {
+                        itemRowInformationV2.trayCode = itemRowViewModelV2.trayCode;
+                        isChangeV2 = true;
+                    }
+                    if (itemRowInformationV2.remarks != itemRowViewModelV2.remarks)
+                    {
+                        itemRowInformationV2.remarks = itemRowViewModelV2.remarks;
+                        isChangeV2 = true;
+                    }
+                    if (itemRowInformationV2.ext1 != itemRowViewModelV2.ext1)
+                    {
+                        itemRowInformationV2.ext1 = itemRowViewModelV2.ext1;
+                        isChangeV2 = true;
+                    }
+                    if (itemRowInformationV2.ext2 != itemRowViewModelV2.ext2)
+                    {
+                        itemRowInformationV2.ext2 = itemRowViewModelV2.ext2;
+                        isChangeV2 = true;
+                    }
+                    newItemRowInformationListV2.Add(itemRowInformationV2);
+                    continue;
+                }
+
+                ItemRowInformation newItemRowInformationV2 = new ItemRowInformation();
+                newItemRowInformationV2.goodsequipmentGuid = goodsequipmentGuid;
+                newItemRowInformationV2.rowColLayer = rowColLayer;
+                newItemRowInformationV2.itemCode = itemRowViewModelV2.itemCode;
+                newItemRowInformationV2.itemName = itemRowViewModelV2.itemName;
+                newItemRowInformationV2.trayCode = itemRowViewModelV2.trayCode;
+                newItemRowInformationV2.remarks = itemRowViewModelV2.remarks;
+                newItemRowInformationV2.ext1 = itemRowViewModelV2.ext1;
+                newItemRowInformationV2.ext2 = itemRowViewModelV2.ext2;
+                newItemRowInformationListV2.Add(newItemRowInformationV2);
+                isChangeV2 = true;
+            }
+
+            foreach (var oldItemRowInformationV2 in itemRowInformationList)
+            {
+                if (oldItemRowInformationV2 is null)
+                {
+                    continue;
+                }
+                string oldItemCodeV2 = oldItemRowInformationV2.itemCode ?? string.Empty;
+                if (!currentItemCodeSetV2.Contains(oldItemCodeV2))
+                {
+                    isChangeV2 = true;
+                    break;
+                }
+            }
+
+            itemRowInformationList = newItemRowInformationListV2;
+            return isChangeV2;
+        }
+        #endregion
+        #region ªÒ»°÷∏∂®≤÷ø‚ø‚«¯◊Ó¥Û≈≈¡–≤„
+        /// <summary>
+        /// ªÒ»°÷∏∂®≤÷ø‚ø‚«¯◊Ó¥Û≈≈¡–≤„
         /// </summary>
         /// <param name="getAreaMaxRowColLayer"></param>
         /// <returns></returns>
         public MaxRowColLayer GetAreaMaxRowcollayer(GetAreaMaxRowColLayer getAreaMaxRowColLayer)
         {
             MaxRowColLayer maxRowColLayer = new MaxRowColLayer();
-            var filterLocation = Builders<LocationSiteInformation>.Filter.Where(it => it.stockCode == getAreaMaxRowColLayer.stockCode && it.area_code == getAreaMaxRowColLayer.areaCode && it.type == "Ë¥ß‰Ωç");
+            var filterLocation = Builders<LocationSiteInformation>.Filter.Where(it => it.stockCode == getAreaMaxRowColLayer.stockCode && it.area_code == getAreaMaxRowColLayer.areaCode && it.type == "ªıŒª");
             List<LocationSiteInformation> locationSiteInformationList = MongoDBSingleton.Instance.FindList<LocationSiteInformation>(filterLocation);
             double maxRow = 0;
             double maxCol = 0;
@@ -498,9 +745,9 @@ namespace HZ.IDTSCore.Api.Instance
         }
         #endregion
 
-        #region ÂêåÊ≠•Ë¥ß‰Ωç
+        #region Õ¨≤ΩªıŒª
         /// <summary>
-        /// ÂêåÊ≠•Ë¥ß‰Ωç
+        /// Õ¨≤ΩªıŒª
         /// </summary>
         /// <param name="goodsequipmentno"></param>
         /// <returns></returns>
@@ -513,7 +760,7 @@ namespace HZ.IDTSCore.Api.Instance
             if(string.IsNullOrEmpty(goodsequipmentno))
             {
                 returnMessage.IsSuccess = false;
-                returnMessage.Message = "Áî®Êà∑ÂêØÁî®Ë¥ß‰ΩçÂêåÊ≠•ÂêéÔºåÊ≤°ÊúâÈÄâÊã©Ë¥ß‰ΩçËÆæÂ§áÊó†Ê≥ïÂêåÊ≠•ÔºÅ";
+                returnMessage.Message = "”√ªß∆Ù”√ªıŒªÕ¨≤Ω∫Û£¨√ª”–—°‘ÒªıŒª…Ë±∏Œﬁ∑®Õ¨≤Ω£°";
                 return returnMessage;
             }
             GoodscommandService goodscommandService = new Interfaces.Service.SenarioTesting.GoodscommandService(new DbHelper.SessionInfo()
@@ -544,8 +791,8 @@ namespace HZ.IDTSCore.Api.Instance
                 websocketPostInterval = int.Parse(websocketPostIntervalString);
             }
             tn_dts_goodsequipment goodsequipment = goodsequipmentService.GetFirst(it => it.cn_s_goodsequipment_no == goodsequipmentno);
-            tn_dts_goodscommand initgoods = goodscommandService.GetFirst(it => it.cn_s_goodscommand_goodsequipguid == goodsequipment.cn_guid && it.cn_s_goodscommand_type == "ÂàùÂßãÂåñ");
-            List<tn_dts_goodscommand> goodsList = goodscommandService.GetWhere(it => it.cn_s_goodscommand_goodsequipguid == goodsequipment.cn_guid && it.cn_s_goodscommand_type == "‰∏öÂä°");
+            tn_dts_goodscommand initgoods = goodscommandService.GetFirst(it => it.cn_s_goodscommand_goodsequipguid == goodsequipment.cn_guid && it.cn_s_goodscommand_type == "≥ı ºªØ");
+            List<tn_dts_goodscommand> goodsList = goodscommandService.GetWhere(it => it.cn_s_goodscommand_goodsequipguid == goodsequipment.cn_guid && it.cn_s_goodscommand_type == "“µŒÒ");
             //List<StockViewModel> stockViewModelList = new List<StockViewModel>();
             LocationRealMonitorViewModel locationRealMonitorViewModel = new LocationRealMonitorViewModel();
             locationRealMonitorViewModel.stock = new List<StockViewModel>();
@@ -564,7 +811,7 @@ namespace HZ.IDTSCore.Api.Instance
                     catch (Exception exception)
                     {
                         returnMessage.IsSuccess = false;
-                        returnMessage.Message = "tn_dts_goodscommandË°®‰∏≠Ë¥ß‰ΩçËÆæÂ§áÁºñÁ†Å‰∏∫Ôºö" + goodsequipment.cn_s_goodsequipment_no + "ËÆ∞ÂΩïÁöÑÂàùÂßãÂåñÊåá‰ª§JsonÊó†Ê≥ïËΩ¨ÂåñÔºåËØ∑Ê£ÄÊü•ÂêéÈáçËØïÔºÅ";
+                        returnMessage.Message = "tn_dts_goodscommand±Ì÷–ªıŒª…Ë±∏±‡¬ÎŒ™£∫" + goodsequipment.cn_s_goodsequipment_no + "º«¬ºµƒ≥ı ºªØ÷∏¡ÓJsonŒﬁ∑®◊™ªØ£¨«ÎºÏ≤È∫Û÷ÿ ‘£°";
                         return returnMessage;
                     }
                     finally
@@ -612,7 +859,7 @@ namespace HZ.IDTSCore.Api.Instance
                             catch(Exception exception)
                             {
                                 returnMessage.IsSuccess = false;
-                                returnMessage.Message = "tn_dts_goodscommandË°®‰∏≠Ë¥ß‰ΩçËÆæÂ§áÁºñÁ†Å‰∏∫Ôºö" + goodsequipment.cn_s_goodsequipment_no + "ËÆ∞ÂΩïÁöÑ‰∏öÂä°Êåá‰ª§JsonÊó†Ê≥ïËΩ¨ÂåñÔºåËØ∑Ê£ÄÊü•ÂêéÈáçËØïÔºÅ";
+                                returnMessage.Message = "tn_dts_goodscommand±Ì÷–ªıŒª…Ë±∏±‡¬ÎŒ™£∫" + goodsequipment.cn_s_goodsequipment_no + "º«¬ºµƒ“µŒÒ÷∏¡ÓJsonŒﬁ∑®◊™ªØ£¨«ÎºÏ≤È∫Û÷ÿ ‘£°";
                                 return returnMessage;
                             }
                             finally
@@ -665,7 +912,7 @@ namespace HZ.IDTSCore.Api.Instance
                         catch (Exception exception)
                         {
                             returnMessage.IsSuccess = false;
-                            returnMessage.Message = "tn_dts_goodscommandË°®‰∏≠Ë¥ß‰ΩçËÆæÂ§áÁºñÁ†Å‰∏∫Ôºö" + goodsequipment.cn_s_goodsequipment_no + "ËÆ∞ÂΩïÊúâ‰∏öÂä°Êåá‰ª§JsonÊó†Ê≥ïËΩ¨ÂåñÔºåËØ∑Ê£ÄÊü•ÂêéÈáçËØïÔºÅ";
+                            returnMessage.Message = "tn_dts_goodscommand±Ì÷–ªıŒª…Ë±∏±‡¬ÎŒ™£∫" + goodsequipment.cn_s_goodsequipment_no + "º«¬º”–“µŒÒ÷∏¡ÓJsonŒﬁ∑®◊™ªØ£¨«ÎºÏ≤È∫Û÷ÿ ‘£°";
                             return returnMessage;
                         }
                         finally

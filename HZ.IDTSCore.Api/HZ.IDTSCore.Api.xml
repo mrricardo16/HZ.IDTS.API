@@ -408,6 +408,27 @@
             <param name="dbPassword"></param>
             <returns></returns>
         </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.LocationRealMonitor(HZ.IDTSCore.Model.Entity.OpenApi.LocationRealMonitorViewModel)">
+            <summary>
+            开放货位同步接口
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+            <remarks>WebSocketServer.SessionInstance.Instance.PLCSendAllV2 采用新版本
+            StorageDriver.Instance.PublishStocksInfoV2(model.stock); 采用新版本
+            WebSocketServer 采用分批发送的方式，避免一次性发送过大数据量导致前端/WebSocket压力过大
+            </remarks>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.DeviceRealCollect(HZ.IDTSCore.Model.Entity.OpenApi.DeviceRealCollectViewModel)">
+            <summary>
+            设备实时采集数据
+            </summary>
+            <param name="model">设备实时采集数据</param>
+            <returns></returns>
+            <remarks>通用设备实时采集接口V2。
+            保留V1原有的数据落库和内存刷新逻辑，增加耗时监控和空值保护，便于定位高频调用时的慢点。
+            </remarks>
+        </member>
         <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.EquiQuerylist(System.String,System.String)">
             <summary>
             设备查询位置定位
@@ -446,16 +467,40 @@
             <param name="model"></param>
             <returns></returns>
         </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.StackerRealCollect_Old(HZ.IDTSCore.Model.Entity.OpenApi.StackerRealCollectViewModel)">
+            <summary>
+            开放堆垛车数据同步接口(旧版本)
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
         <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.StackerRealCollect(HZ.IDTSCore.Model.Entity.OpenApi.StackerRealCollectViewModel)">
             <summary>
-            开放堆垛车数据同步接口
+            开放堆垛车数据同步接口(新版本) 优化20260507
+            </summary>
+             await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString); 优化WebSocket发送，解决数据量大时发送不及时问题
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.RGVRealCollect_Old(HZ.IDTSCore.Model.Entity.OpenApi.RGVRealCollectViewModel)">
+            <summary>
+            开放RGV数据同步接口(旧版本)    
             </summary>
             <param name="model"></param>
             <returns></returns>
         </member>
         <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.RGVRealCollect(HZ.IDTSCore.Model.Entity.OpenApi.RGVRealCollectViewModel)">
             <summary>
-            开放RGV数据同步接口
+            开放RGV数据同步接口(新版本-优化20260507)
+            </summary>
+            await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString); 优化WebSocket发送，解决数据量大时发送不及时问题   
+            DeviceDriver.Instance.PublishDevicesV2(rgv.Code, rgv.Name, "RGV", rgv.State, errCode, errMsg, DateTime.Now); 优化设备状态发布，增加新版本方法PublishDevicesV2，解决数据量大时发布不及时问题
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.ConveyorRealCollect_Old(HZ.IDTSCore.Model.Entity.OpenApi.ConveyorRealCollectViewModel)">
+            <summary>
+            开放输送线数据同步接口(旧版本)    
             </summary>
             <param name="model"></param>
             <returns></returns>
@@ -466,6 +511,15 @@
             </summary>
             <param name="model"></param>
             <returns></returns>
+            <remarks>开放输送线数据同步接口(新版本) 
+             await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString);优化WebSocket发送，解决数据量大时发送不及时问题
+            </remarks>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.SendConveyorWebSocketAsync(System.String,System.Int32)">
+            <summary>
+            输送线WebSocket后台推送。
+            第三方系统2秒一次调用接口，WebSocket客户端异常时不能阻塞HTTP请求返回。
+            </summary>
         </member>
         <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.GetMenu">
             <summary>
@@ -482,6 +536,12 @@
         <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.GetGoodsInfo(System.String,System.String,System.String,System.String)">
             <summary>
             获取载具上物料详细信息
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.syncFullLocation">
+            <summary>
+            手动触发全量货位同步
             </summary>
             <returns></returns>
         </member>
@@ -1581,6 +1641,19 @@
             <param name="publishTimestamp">更新时间戳</param>
             <returns></returns>
         </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DeviceDriver.PublishDevicesV2(System.String,System.String,System.String,System.String,System.String,System.String,System.DateTime)">
+            <summary>
+            优化后的设备刷新内存方法，减少对内存的查询次数
+            </summary>
+            <param name="deviceCode"></param>
+            <param name="deviceName"></param>
+            <param name="deviceType"></param>
+            <param name="deviceState"></param>
+            <param name="errCode"></param>
+            <param name="errMsg"></param>
+            <param name="publishTimestamp"></param>
+            <returns></returns>
+        </member>
         <member name="M:HZ.IDTSCore.Api.Instance.DeviceDriver.PublishRealCollect(HZ.IDTSCore.Model.Entity.OpenApi.GlobalRealCollectViewModel)">
             <summary>
             刷新内存设备采集数据
@@ -1594,6 +1667,51 @@
             </summary>
             <param name="goodsequipmentguid"></param>
             <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.RefreshStockItemInformationV2(System.String)">
+            <summary>
+            刷新指定货位设备Mongo库位信息V2。
+            时间：2026-05-29
+            优化内容：原版本在WatchStockItemInformation中按货位逐条FindOneFilter查询MongoDB，货位数量几万时会产生几万次MongoDB请求。
+            V2版本一次性取出该货位设备已有货位数据，在内存中用Dictionary按locationCode匹配，只保留必要的新增、修改、删除操作。
+            注意：原RefreshStockItemInformation、WatchStockItemInformation、WatchItemRow均不改动，V2方法独立保留。
+            </summary>
+            <param name="goodsequipmentguid">货位设备唯一标识</param>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.DeserializeLocationRealMonitorV2(System.String)">
+            <summary>
+            反序列化货位同步ModelV2。
+            </summary>
+            <param name="json">货位同步Json</param>
+            <returns>货位同步Model</returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.WatchStockItemInformationV2(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.MongoDB.StockItemInformation}@,System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.MongoDB.StockItemInformation}@,System.Collections.Generic.List{MongoDB.Bson.ObjectId}@,System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.SenarioTesting.RefreshStock},System.String)">
+            <summary>
+            判定货位信息是否修改V2。
+            时间：2026-05-29
+            优化内容：原版本每个货位都调用FindOneFilter查询MongoDB；V2一次FindList取出旧数据，然后用Dictionary在内存中按locationCode匹配。
+            </summary>
+            <param name="stockItemInformationAddListV2">需要新增的货位列表</param>
+            <param name="stockItemInformationUpdateListV2">需要更新的货位列表</param>
+            <param name="stockItemInformationDeleteIdListV2">需要删除的MongoDB主键列表</param>
+            <param name="refreshStockList">指令解析出的货位数据</param>
+            <param name="goodsequipmentGuid">货位设备唯一标识</param>
+            <returns>是否存在新增、修改或删除</returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.BuildStockItemInformationV2(HZ.IDTSCore.Model.Entity.SenarioTesting.RefreshStock,System.String,HZ.IDTSCore.Model.Entity.OpenApi.StockViewModel)">
+            <summary>
+            构建货位信息V2。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.ApplyStockItemInformationV2(HZ.IDTSCore.Model.Entity.MongoDB.StockItemInformation,HZ.IDTSCore.Model.Entity.SenarioTesting.RefreshStock,System.String,HZ.IDTSCore.Model.Entity.OpenApi.StockViewModel)">
+            <summary>
+            应用货位变更V2。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.BuildItemRowInformationListV2(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.OpenApi.ItemRowViewModel},System.String,System.String)">
+            <summary>
+            构建物料信息列表V2。
+            </summary>
         </member>
         <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.WatchStockItemInformation(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.MongoDB.StockItemInformation}@,System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.SenarioTesting.RefreshStock},System.String)">
             <summary>
@@ -1614,6 +1732,18 @@
             <param name="rowColLayer"></param>
             <returns></returns>
         </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.WatchItemRowV2(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.MongoDB.ItemRowInformation}@,System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.OpenApi.ItemRowViewModel},System.String,System.String)">
+            <summary>
+            判定物料信息是否修改V2。
+            时间：2026-05-29
+            优化内容：原版本每个物料都FirstOrDefault扫描旧物料列表；V2将旧物料按itemCode转成Dictionary，减少物料明细比对耗时。
+            </summary>
+            <param name="itemRowInformationList">MongoDB中已有物料信息</param>
+            <param name="itemRowViewModelList">接口Json中的物料信息</param>
+            <param name="goodsequipmentGuid">货位设备唯一标识</param>
+            <param name="rowColLayer">货位编码</param>
+            <returns>是否存在物料新增、修改或删除</returns>
+        </member>
         <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.GetAreaMaxRowcollayer(HZ.IDTSCore.Model.Entity.location.GetAreaMaxRowColLayer)">
             <summary>
             获取指定仓库库区最大排列层
@@ -1627,6 +1757,28 @@
             </summary>
             <param name="goodsequipmentno"></param>
             <returns></returns>
+        </member>
+        <member name="P:HZ.IDTSCore.Api.Instance.LocationRealMonitorDriver.Instance">
+            <summary>
+            获取单实例
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.LocationRealMonitorDriver.LocationRealMonitorProc(HZ.IDTSCore.Model.Entity.OpenApi.LocationRealMonitorViewModel)">
+            <summary>
+            货位同步方法(提供给API和Redis订阅的通用方法)
+            默认策略：每1000个货位推送一批，每批之间等待10ms。
+            适用场景：API接口直接推送大批量货位，例如4万货位初始化，避免前端/WebSocket瞬间收到超大包。
+            </summary>
+            <param name="model">货位实时数据。</param>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.LocationRealMonitorDriver.LocationRealMonitorProc(HZ.IDTSCore.Model.Entity.OpenApi.LocationRealMonitorViewModel,System.Int32,System.Int32)">
+            <summary>
+            货位同步方法(提供给API和Redis订阅的通用方法)
+            处理内容：先通过WebSocket分批推送给前端，再刷新StorageDriver中的货位内存缓存。
+            </summary>
+            <param name="model">货位数据</param>
+            <param name="batchSize">WebSocket每批发送的货位数量</param>
+            <param name="intervalMs">每批WebSocket发送间隔，0表示不等待</param>
         </member>
         <member name="P:HZ.IDTSCore.Api.Instance.ObjectDriver.latestCopyObjectGuid">
             <summary>
@@ -1706,6 +1858,64 @@
             <summary>
             日志接口
             </summary>
+        </member>
+        <member name="T:HZ.IDTSCore.Api.RedisSubscribeHostedService">
+            <summary>
+            Redis订阅类
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.RedisSubscribeHostedService.LocationRealMonitorBatchWindowMs">
+            <summary>
+            货位订阅消息聚合等待窗口。
+            作用：让同一瞬间进入的多条Redis消息先合并，再统一推送WebSocket，减少推送次数。
+            说明：窗口越小延迟越低，窗口越大合并效果越好；当前50ms用于兼顾实时性和1000条并发消息合并效果。
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.RedisSubscribeHostedService.LocationRealMonitorMaxMessageCount">
+            <summary>
+            单次最多合并的Redis订阅消息数量。
+            作用：避免某一轮处理过多消息导致后台消费者长期占用，影响后续消息处理。
+            目标：现场要求1000条订阅消息同时进来时，尽量在1s内完成WebSocket推送。
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.RedisSubscribeHostedService.LocationRealMonitorWebSocketBatchSize">
+            <summary>
+            WebSocket每批发送的货位数量。
+            说明：Redis侧已经先按消息数量聚合；这里再按货位数量分批，避免单个WebSocket包过大。
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.RedisSubscribeHostedService.LocationRealMonitorWebSocketIntervalMs">
+            <summary>
+            Redis订阅聚合后，WebSocket分批发送之间的等待时间。
+            说明：这里设置为0，是为了满足1000条订阅消息在1s内尽快推送出去。
+            API接口默认仍可使用10ms间隔，避免一次性推送4万货位时前端压力过大。
+            </summary>
+        </member>
+        <member name="F:HZ.IDTSCore.Api.RedisSubscribeHostedService._locationRealMonitorQueue">
+            <summary>
+            LocationRealMonitor订阅消息队列。
+            设计意图：Redis回调线程只负责TryWrite快速入队，真正的JSON反序列化、数据合并、WebSocket推送都交给后台消费者处理。
+            好处：1000条订阅消息同时进入时，不会在Redis回调线程里同步等待1000次WebSocket发送。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.RedisSubscribeHostedService.ProcessLocationRealMonitorQueueAsync(System.Threading.CancellationToken)">
+            <summary>
+            后台消费LocationRealMonitor订阅消息。
+            核心目的：把短时间内并发进来的多条Redis消息合并成一批，减少WebSocket推送次数。
+            </summary>
+            <param name="stoppingToken">应用停止信号，用于优雅退出后台消费循环。</param>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.RedisSubscribeHostedService.DrainLocationRealMonitorQueue(System.Collections.Generic.List{System.String})">
+            <summary>
+            从队列中尽可能多地读取消息，但单批最多读取1000条，避免单次批处理过大影响后续消息。
+            </summary>
+            <param name="messageBodies">本轮待处理的Redis消息体集合。</param>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.RedisSubscribeHostedService.FlushLocationRealMonitorMessagesAsync(System.Collections.Generic.List{System.String})">
+            <summary>
+            批量反序列化Redis消息并复用货位处理逻辑统一推送WebSocket。
+            </summary>
+            <param name="messageBodies">一批Redis消息体，通常是50ms窗口内聚合得到的数据。</param>
         </member>
         <member name="P:HZ.IDTSCore.Api.BackupsThread._AutomaticBackUpThread">
             <summary>
@@ -1984,6 +2194,27 @@
         <member name="M:HZ.IDTSCore.Api.UpkeepThread.Stop">
             <summary>
             停止服务
+            </summary>
+        </member>
+        <member name="T:HZ.DbHelper.HttpContext">
+            <summary>
+            兼容旧代码中 HZ.DbHelper.HttpContext.Current 的访问方式。
+            .NET Core 没有 System.Web.HttpContext.Current，所以通过 IHttpContextAccessor 获取当前请求上下文。
+            </summary>
+        </member>
+        <member name="P:HZ.DbHelper.HttpContext.Current">
+            <summary>
+            当前请求上下文。后台线程或非HTTP请求场景下可能为空。
+            </summary>
+        </member>
+        <member name="M:HZ.DbHelper.HttpContext.Configure(Microsoft.AspNetCore.Http.IHttpContextAccessor)">
+            <summary>
+            保存应用启动时注入的 IHttpContextAccessor。
+            </summary>
+        </member>
+        <member name="T:Microsoft.AspNetCore.Builder.StaticHttpContextExtensions">
+            <summary>
+            注册静态 HttpContext 访问器，兼容项目中原有 app.UseStaticHttpContext() 调用。
             </summary>
         </member>
     </members>

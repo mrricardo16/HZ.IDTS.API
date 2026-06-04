@@ -17,13 +17,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DBHelper\HZ.DbHelper.csproj" />
+    <ProjectReference Include="..\HZ.CommonUtil\HZ.CommonUtil.csproj" />
     <ProjectReference Include="..\HZ.IDTSCore.Common\HZ.IDTSCore.Common.csproj" />
     <ProjectReference Include="..\HZ.IDTSCore.Model\HZ.IDTSCore.Model.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Autofac" Version="5.1.0" />
-    <PackageReference Include="CSRedisCore" Version="3.6.5" />
+    <PackageReference Include="CSRedisCore" Version="3.8.803" />
     <PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
     <PackageReference Include="Microsoft.AspNet.Mvc" Version="5.2.9" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.1.5" />
@@ -31,7 +33,7 @@
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.13.1" />
     <PackageReference Include="MongoDB.Driver.Core" Version="2.13.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="SqlSugarCore" Version="5.0.9.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.6.1" />
     <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" />
@@ -44,12 +46,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="HZ.CommonUtil">
-      <HintPath>..\LIB\HZ.CommonUtil.dll</HintPath>
-    </Reference>
-    <Reference Include="HZ.DbHelper">
-      <HintPath>..\LIB\HZ.DbHelper.dll</HintPath>
-    </Reference>
     <Reference Include="HZ.iWCS.MData.Core">
       <HintPath>..\LIB\HZ.iWCS.MData.Core.dll</HintPath>
     </Reference>

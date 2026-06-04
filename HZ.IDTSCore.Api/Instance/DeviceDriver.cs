@@ -107,6 +107,74 @@ namespace HZ.IDTSCore.Api.Instance
             return result;
         }
 
+
+        private readonly Dictionary<string, GlobalDevicesViewsModel> _stateMap = new Dictionary<string, GlobalDevicesViewsModel>();
+
+        /// <summary>
+        /// 优化后的设备刷新内存方法，减少对内存的查询次数
+        /// </summary>
+        /// <param name="deviceCode"></param>
+        /// <param name="deviceName"></param>
+        /// <param name="deviceType"></param>
+        /// <param name="deviceState"></param>
+        /// <param name="errCode"></param>
+        /// <param name="errMsg"></param>
+        /// <param name="publishTimestamp"></param>
+        /// <returns></returns>
+        public bool PublishDevicesV2(
+        string deviceCode,
+        string deviceName,
+        string deviceType,
+        string deviceState,
+        string errCode,
+        string errMsg,
+        DateTime publishTimestamp)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(deviceCode))
+                {
+                    return false;
+                }
+
+                lock (_stateListLock)
+                {
+                    if (!_stateMap.TryGetValue(deviceCode, out var device))
+                    {
+                        device = new GlobalDevicesViewsModel()
+                        {
+                            deviceCode = deviceCode,
+                            deviceName = deviceName,
+                            deviceType = deviceType,
+                            deviceState = deviceState,
+                            errCode = errCode,
+                            errMsg = errMsg,
+                            publishTimestamp = publishTimestamp
+                        };
+
+                        _stateList.Add(device);
+                        _stateMap.Add(deviceCode, device);
+                    }
+                    else
+                    {
+                        device.deviceName = deviceName;
+                        device.deviceType = deviceType;
+                        device.deviceState = deviceState;
+                        device.errCode = errCode;
+                        device.errMsg = errMsg;
+                        device.publishTimestamp = publishTimestamp;
+                    }
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
         public GlobalDevicesViewsModel GetDevice(string deviceCode)
         {
             return this.StateList.FirstOrDefault(p => p.deviceCode == deviceCode);

@@ -3,6 +3,7 @@ using SuperSocket;
 using SuperSocket.WebSocket.Server;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -256,7 +257,7 @@ namespace HZ.IDTSCore.WebSocketServer
             {
                 try
                 {
-                    LogHelper.Info("WCSSessionList个数：" + WCSSessionList.Count);
+                    //LogHelper.Info("WCSSessionList个数：" + WCSSessionList.Count);
                     //对当前已连接的所有会话进行广播
                     foreach (var session in WCSSessionList)
                     {
@@ -272,6 +273,34 @@ namespace HZ.IDTSCore.WebSocketServer
                 {
                     LogHelper.Info("PLCSendAll异常，详细情况为：" + exception.Message);
                 }
+            }
+        }
+
+        /// <summary>
+        /// 广播数据 -20260507 优化性能，减少锁粒度和重复查询
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <returns></returns>
+        public async ValueTask PLCSendAllV2(string msg)
+        {
+            try
+            {
+                List<WebSession> sessions;
+                lock (lockObject)
+                {
+                    sessions = WCSSessionList
+                        .Where(x => x.State == SessionState.Connected)
+                        .ToList();
+                }
+
+                foreach (var session in sessions)
+                {
+                    await session.SendAsync(msg);
+                }
+            }
+            catch (Exception exception)
+            {
+                LogHelper.Info("PLCSendAllV2异常，详细情况为：" + exception.Message);
             }
         }
 

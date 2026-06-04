@@ -1,5 +1,6 @@
 ﻿using HZ.CommonUtil.Model;
 using HZ.IDTSCore.Api.Authorization;
+using HZ.IDTSCore.Api.Services;
 using HZ.IDTSCore.Interfaces;
 using HZ.IDTSCore.Interfaces.IService.Sys;
 using HZ.IDTSCore.Model.Entity.Equipment;
@@ -250,7 +251,8 @@ namespace HZ.IDTSCore.Api.Controllers.Info
                     return toResponse(resultReturn);
                 }
 
-                Dictionary<string, string> packageName = new Dictionary<string, string>();
+                Dictionary<string, string> packageName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                bool hasUnifiedUpdateDescription = false;
                 using (ZipInputStream zipInputStream = new ZipInputStream(System.IO.File.OpenRead(filePath)))
                 {
                     ZipEntry theEntry;
@@ -262,34 +264,37 @@ namespace HZ.IDTSCore.Api.Controllers.Info
                         string fileName = Path.GetFileName(theEntry.Name);
                         string directoryName = Path.GetDirectoryName(theEntry.Name);
                         string[] levelPathList = theEntry.Name.Split("/");
-                        Regex regUI = new Regex("idts_ui");
-                        Regex regApi = new Regex("idts_api");
-                        Regex regPgsql = new Regex("idts_pgsql");
                         Regex regUpdate = new Regex("更新说明");
-                        if (regUI.IsMatch(theEntry.Name) && String.IsNullOrEmpty(fileName) && levelPathList.Length == 3 && levelPathList[1] != "")
+                        if (String.IsNullOrEmpty(fileName) && UpdateDescriptionParser.TryGetPackageDirectory(theEntry.Name, out string packageTypeKey, out string packageVersion))
                         {
-                            packageName["idts_ui"] = theEntry.Name.Split("/")[1];
-                            uploadPackage.HasUIPackage = true;
+                            packageName[packageTypeKey] = packageVersion;
+                            if (packageTypeKey == "idts_ui")
+                            {
+                                uploadPackage.HasUIPackage = true;
+                            }
+                            else if (packageTypeKey == "idts_api")
+                            {
+                                uploadPackage.HasAPIPackage = true;
+                            }
+                            else if (packageTypeKey == "idts_pgsql")
+                            {
+                                uploadPackage.HasSqlScript = true;
+                            }
                             continue;
                         }
-                        if (regApi.IsMatch(theEntry.Name) && String.IsNullOrEmpty(fileName) && levelPathList.Length == 3 && levelPathList[1] != "")
+                        if (!String.IsNullOrEmpty(fileName) && UpdateDescriptionParser.IsUnifiedDescriptionPath(theEntry.Name))
                         {
-                            packageName["idts_api"] = theEntry.Name.Split("/")[1];
-                            uploadPackage.HasAPIPackage = true;
+                            packageName["update"] = fileName;
+                            hasUnifiedUpdateDescription = true;
                             continue;
                         }
-                        if (regPgsql.IsMatch(theEntry.Name) && String.IsNullOrEmpty(fileName) && levelPathList.Length == 3 && levelPathList[1] != "")
-                        {
-                            packageName["idts_pgsql"] = theEntry.Name.Split("/")[1];
-                            uploadPackage.HasSqlScript = true;
-                            continue;
-                        }
-                        if (regUpdate.IsMatch(theEntry.Name) && !String.IsNullOrEmpty(fileName) && levelPathList.Length == 2 && levelPathList[1] != "")
+                        string updateExtensionName = Path.GetExtension(fileName).TrimStart('.').ToLower();
+                        if (!hasUnifiedUpdateDescription && regUpdate.IsMatch(theEntry.Name) && !String.IsNullOrEmpty(fileName) && levelPathList.Length == 2 && levelPathList[1] != "" && (updateExtensionName == "xls" || updateExtensionName == "xlsx"))
                         {
                             packageName["update"] = theEntry.Name.Split("/")[1];
                             continue;
                         }
-                        if (String.IsNullOrEmpty(fileName) && levelPathList.Length == 3 && levelPathList[1] != "")
+                        if (String.IsNullOrEmpty(fileName) && levelPathList.Length == 3 && levelPathList[1] != "" && levelPathList[1] != "idts_ui" && levelPathList[1] != "idts_api" && levelPathList[1] != "idts_pgsql")
                         {
                             resultReturn.IsSuccess = false;
                             resultReturn.StatusCode = (int)StatusCodeType.Error;
@@ -303,16 +308,37 @@ namespace HZ.IDTSCore.Api.Controllers.Info
                     System.IO.File.Delete(filePath);
                     resultReturn.IsSuccess = false;
                     resultReturn.StatusCode = (int)StatusCodeType.Error;
-                    resultReturn.Message = "上传的更新包中不含更新说明，请重试！";
+                    resultReturn.Message = "更新包中未找到支持的更新说明文件";
                     return toResponse(resultReturn);
                 }
-                if (packageName["update"].Split('.')[1] != "xls" && packageName["update"].Split('.')[1] != "xlsx")
+                string updateExtension = Path.GetExtension(packageName["update"]).TrimStart('.').ToLower();
+                if (!hasUnifiedUpdateDescription && updateExtension != "xls" && updateExtension != "xlsx")
                 {
                     System.IO.File.Delete(filePath);
                     resultReturn.IsSuccess = false;
                     resultReturn.StatusCode = (int)StatusCodeType.Error;
-                    resultReturn.Message = "系统仅支持xls和xlsx格式的更新说明，请重试！";
+                    resultReturn.Message = "更新包中未找到支持的更新说明文件";
                     return toResponse(resultReturn);
+                }
+                List<UpdatePackage> updatePackageList = new List<UpdatePackage>();
+                if (hasUnifiedUpdateDescription)
+                {
+                    ParsedUpdateDescription parsedUpdateDescription;
+                    string parseErrorMessage;
+                    if (!UpdateDescriptionParser.TryParseFromZip(filePath, out parsedUpdateDescription, out parseErrorMessage))
+                    {
+                        System.IO.File.Delete(filePath);
+                        resultReturn.IsSuccess = false;
+                        resultReturn.StatusCode = (int)StatusCodeType.Error;
+                        resultReturn.Message = parseErrorMessage;
+                        return toResponse(resultReturn);
+                    }
+
+                    updatePackageList = parsedUpdateDescription.Items.Select(it => new UpdatePackage
+                    {
+                        PackageVersion = it.PackageVersion,
+                        UpdateContent = it.UpdateContent
+                    }).ToList();
                 }
 
                 using (ZipInputStream zipInputStreamChecked = new ZipInputStream(System.IO.File.OpenRead(filePath)))
@@ -354,21 +380,7 @@ namespace HZ.IDTSCore.Api.Controllers.Info
                 }
                 //System.IO.File.Delete(filePath);
                 string updatePath = Path.Combine(UploadsFolder, decompressionFolder, packageName["update"]);
-                List<UpdatePackage> updatePackageList = new List<UpdatePackage>();
 
-                //using (StreamReader sr = new StreamReader(updatePath))
-                //{
-                //    string line;
-                //    while ((line = sr.ReadLine()) != null)
-                //    {
-                //        UpdatePackage updatePackage = new UpdatePackage();
-                //        string packageVersion = line.Split('@')[1].Trim();
-                //        updatePackage.PackageVersion = packageVersion.Substring(packageVersion.IndexOf('：') + 1);
-                //        string updateContent = line.Split('@')[2].Trim();
-                //        updatePackage.UpdateContent = updateContent.Substring(updateContent.IndexOf('：') + 1);
-                //        updatePackageList.Add(updatePackage);
-                //    }
-                //}
                 //ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
                 //using (ExcelPackage package = new ExcelPackage(new FileInfo(updatePath)))
                 //{
@@ -388,34 +400,56 @@ namespace HZ.IDTSCore.Api.Controllers.Info
                 //        updatePackageList.Add(updatePackage);
                 //    }
                 //}
-                using (FileStream fileStream = new FileStream(updatePath, FileMode.Open))
+                if (!hasUnifiedUpdateDescription)
                 {
-                    IWorkbook workbook = WorkbookFactory.Create(fileStream);
-                    ISheet sheet = null;
-                    sheet = workbook.GetSheetAt(1);
-                    if (sheet != null)
+                    using (FileStream fileStream = new FileStream(updatePath, FileMode.Open))
                     {
-                        for (int i = 1; i <= sheet.LastRowNum; i++)
+                        IWorkbook workbook = WorkbookFactory.Create(fileStream);
+                        ISheet sheet = null;
+                        sheet = workbook.GetSheetAt(1);
+                        if (sheet != null)
                         {
-                            if (String.IsNullOrEmpty(sheet.GetRow(i).GetCell(5).StringCellValue) || String.IsNullOrEmpty(sheet.GetRow(i).GetCell(4).StringCellValue))
+                            for (int i = 1; i <= sheet.LastRowNum; i++)
                             {
-                                continue;
+                                if (String.IsNullOrEmpty(sheet.GetRow(i).GetCell(5).StringCellValue) || String.IsNullOrEmpty(sheet.GetRow(i).GetCell(4).StringCellValue))
+                                {
+                                    continue;
+                                }
+                                UpdatePackage updatePackage = new UpdatePackage();
+                                updatePackage.PackageVersion = sheet.GetRow(i).GetCell(5).StringCellValue;
+                                updatePackage.UpdateContent = sheet.GetRow(i).GetCell(4).StringCellValue;
+                                updatePackageList.Add(updatePackage);
                             }
-                            UpdatePackage updatePackage = new UpdatePackage();
-                            updatePackage.PackageVersion = sheet.GetRow(i).GetCell(5).StringCellValue;
-                            updatePackage.UpdateContent = sheet.GetRow(i).GetCell(4).StringCellValue;
-                            updatePackageList.Add(updatePackage);
                         }
                     }
                 }
 
+                if (updatePackageList.Count == 0)
+                {
+                    resultReturn.IsSuccess = false;
+                    resultReturn.StatusCode = (int)StatusCodeType.Error;
+                    resultReturn.Message = "更新说明中未读取到有效更新内容，请重试！";
+                    return toResponse(resultReturn);
+                }
+
                 foreach (var updatePackage in updatePackageList)
                 {
-                    if (packageName.Values.Where(it => it == updatePackage.PackageVersion).ToArray().Length == 0)
+                    if (packageName.Where(it => it.Key != "update").Select(it => it.Value).Where(it => it == updatePackage.PackageVersion).ToArray().Length == 0)
                     {
                         resultReturn.IsSuccess = false;
                         resultReturn.StatusCode = (int)StatusCodeType.Error;
-                        resultReturn.Message = "存在“idts_ui”、“idts_api”和“idts_pgsql”更新包不包含更新说明或者更新包版本号不对应，请重试！";
+                        resultReturn.Message = "更新说明中声明了版本但压缩包内找不到对应升级包：" + updatePackage.PackageVersion;
+                        return toResponse(resultReturn);
+                    }
+                }
+
+                foreach (var packageItem in packageName.Where(it => it.Key != "update"))
+                {
+                    if (updatePackageList.Where(it => it.PackageVersion == packageItem.Value).ToArray().Length == 0)
+                    {
+                        resultReturn.IsSuccess = false;
+                        resultReturn.StatusCode = (int)StatusCodeType.Error;
+                        resultReturn.Message = "压缩包内升级包未在更新说明中声明：" + packageItem.Value;
                         return toResponse(resultReturn);
                     }
                 }

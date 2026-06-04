@@ -9,9 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="HZ.CommonUtil">
-      <HintPath>..\LIB\HZ.CommonUtil.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\HZ.CommonUtil\HZ.CommonUtil.csproj" />
   </ItemGroup>
 
 </Project>

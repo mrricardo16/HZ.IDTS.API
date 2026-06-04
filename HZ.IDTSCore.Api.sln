@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30128.74
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11605.240
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{82841A77-4235-4E95-AD08-D39635724AC4}"
 EndProject
@@ -22,6 +22,12 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HZ.IDTSCore.WebSocketServer", "HZ.IDTSCore.WebSocketServer\HZ.IDTSCore.WebSocketServer.csproj", "{D8D6FC33-AE3A-421B-94E7-9F050473AC00}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HZ.IDTS.SimulateService", "HZ.IDTS.SimulateService\HZ.IDTS.SimulateService.csproj", "{4066E8E3-9301-4549-B063-C0C8883D062B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HZ.DbHelper", "DBHelper\HZ.DbHelper.csproj", "{EDC225E7-17A2-65E6-EACF-09B364E3D448}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HZ.CommonUtil", "HZ.CommonUtil\HZ.CommonUtil.csproj", "{6133F3BB-A2FF-BE23-D00B-7313E0C96A5D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbContextPoolPressureTest", "PressureTests\DbContextPoolPressureTest\DbContextPoolPressureTest.csproj", "{45B0D752-2174-0A23-7F6A-7A46CD05B2EB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +63,18 @@ Global
 		{4066E8E3-9301-4549-B063-C0C8883D062B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4066E8E3-9301-4549-B063-C0C8883D062B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4066E8E3-9301-4549-B063-C0C8883D062B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDC225E7-17A2-65E6-EACF-09B364E3D448}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDC225E7-17A2-65E6-EACF-09B364E3D448}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDC225E7-17A2-65E6-EACF-09B364E3D448}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDC225E7-17A2-65E6-EACF-09B364E3D448}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6133F3BB-A2FF-BE23-D00B-7313E0C96A5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6133F3BB-A2FF-BE23-D00B-7313E0C96A5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6133F3BB-A2FF-BE23-D00B-7313E0C96A5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6133F3BB-A2FF-BE23-D00B-7313E0C96A5D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45B0D752-2174-0A23-7F6A-7A46CD05B2EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45B0D752-2174-0A23-7F6A-7A46CD05B2EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45B0D752-2174-0A23-7F6A-7A46CD05B2EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45B0D752-2174-0A23-7F6A-7A46CD05B2EB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -69,6 +87,7 @@ Global
 		{A52DA791-3F27-4668-BE07-3A41A2FD0840} = {4FA177A8-558E-4886-B1CF-966215896BFE}
 		{D8D6FC33-AE3A-421B-94E7-9F050473AC00} = {335903B0-8E31-4E3A-9024-EE89BD0DCC52}
 		{4066E8E3-9301-4549-B063-C0C8883D062B} = {335903B0-8E31-4E3A-9024-EE89BD0DCC52}
+		{45B0D752-2174-0A23-7F6A-7A46CD05B2EB} = {4FA177A8-558E-4886-B1CF-966215896BFE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {190A1AB7-CA0C-44D1-8F57-F57B99F977C0}

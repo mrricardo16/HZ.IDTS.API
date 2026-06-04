@@ -40,6 +40,8 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
         private IAgvTaskTrackingService _ITrackingService;
         private IAgvTimeTrackingService _ITimeTrackingService;
         private ISettingService _ISettingService;
+        private static readonly System.Threading.SemaphoreSlim _conveyorWebSocketSendLock = new System.Threading.SemaphoreSlim(1, 1);
+        private const int ConveyorSlowLogMilliseconds = 1000;
 
         public DtsController()
         {
@@ -119,7 +121,7 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                         string stockCode = _ISettingService.GetFirst(it => it.cn_s_setting_keycode == "WMSLocationApiStockCode").cn_s_setting_keyvalue;
                         string areaCode = _ISettingService.GetFirst(it => it.cn_s_setting_keycode == "WMSLocationApiAreaCode").cn_s_setting_keyvalue;
                         ApiResult apiResLocation = new ApiResult();
-                        string strLocationList = WebApiManager.HttpGet(baseUrl, pathAndQuery + $"?stockCode={stockCode}&areaCode={areaCode}", ref apiResLocation);
+                        string strLocationList = WebApiManager.HttpGet(baseUrl, pathAndQuery + $"?stockCode={stockCode}&areaCode={areaCode}", ref apiResLocation, "", user.TokenId);
                         List<LocationStateWMS> locationStateInfoList = JsonConvert.DeserializeObject<List<LocationStateWMS>>(strLocationList);
                         LogHelper.Info("【locationStateInfoList】：" + JsonConvert.SerializeObject(locationStateInfoList));
                         LogHelper.Info("【strLocationList】：" + JsonConvert.SerializeObject(strLocationList));
@@ -267,10 +269,11 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
         //}
         #endregion
 
-        #region 开放货位同步接口
+        #region 开放货位同步接口(旧版本)
         [HttpPost]
-        public IActionResult LocationRealMonitor(LocationRealMonitorViewModel model)
+        public IActionResult LocationRealMonitor_Old(LocationRealMonitorViewModel model)
         {
+
             ApiResult result = new ApiResult();
             if (model != null)
             {
@@ -289,6 +292,60 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                 result.ErrCode = -1;
                 result.Message = "请求参数不能为空或NULL";
             }
+            return toResponse(result);
+        }
+        #endregion
+
+        #region 开放货位同步接口(新版本) V2-20260507 （兼容旧版本）
+        /// <summary>
+        /// 开放货位同步接口
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        /// <remarks>WebSocketServer.SessionInstance.Instance.PLCSendAllV2 采用新版本
+        /// StorageDriver.Instance.PublishStocksInfoV2(model.stock); 采用新版本
+        /// WebSocketServer 采用分批发送的方式，避免一次性发送过大数据量导致前端/WebSocket压力过大
+        /// </remarks>
+        [HttpPost]
+        public async Task<IActionResult> LocationRealMonitor(LocationRealMonitorViewModel model)
+        {
+            ApiResult result = new ApiResult();
+            if (model?.stock == null)
+            {
+                result.IsSuccess = false;
+                result.ErrCode = -1;
+                result.Message = "请求参数不能为空或NULL";
+                return toResponse(result);
+            }
+
+            /*
+            int batchSize = 1000;        // 每批 1000 条，可按现场情况调成 200/500/1000
+            int intervalMs = 10;       // 每批间隔 10ms，避免瞬间压爆前端/WebSocket
+            int total = model.stock.Count;
+            for (int i = 0; i < total; i += batchSize)
+            {
+                int take = Math.Min(batchSize, total - i);
+                LocationRealMonitorViewModel batchModel = new LocationRealMonitorViewModel
+                {
+                    stock = model.stock.GetRange(i, take)
+                };
+                string sendJSONString = JsonConvert.SerializeObject(batchModel);
+                await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString);
+                if (intervalMs > 0 && i + take < total)
+                {
+                    await Task.Delay(intervalMs);
+                }
+            }
+            if (model.stock.Count > 0)
+            {
+                StorageDriver.Instance.PublishStocksInfoV2(model.stock);
+            }*/
+            await LocationRealMonitorDriver.Instance.LocationRealMonitorProc(model);
+
+            result.IsSuccess = true;
+            result.ErrCode = 0;
+            result.Message = "";
+
             return toResponse(result);
         }
         #endregion
@@ -505,9 +562,9 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
         }
         #endregion
 
-        #region 通用设备实时采集接口
+        #region 通用设备实时采集接口(旧版本)
         [HttpPost]
-        public IActionResult DeviceRealCollect(DeviceRealCollectViewModel model)
+        public IActionResult DeviceRealCollect_Old(DeviceRealCollectViewModel model)
         {
             ApiResult result = new ApiResult();
             if (model.eqRealCollect != null && model.eqRealCollect.Count > 0)
@@ -615,6 +672,176 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                 result.Message = "采集设备集合无数据";
                 result.Timestamp = DateTime.Now.ToString();
             }
+            return toResponse(result);
+        }
+
+        /// <summary>
+        /// 设备实时采集数据
+        /// </summary>
+        /// <param name="model">设备实时采集数据</param>
+        /// <returns></returns>
+        /// <remarks>通用设备实时采集接口V2。
+        /// 保留V1原有的数据落库和内存刷新逻辑，增加耗时监控和空值保护，便于定位高频调用时的慢点。
+        /// </remarks>
+        [HttpPost]
+        public IActionResult DeviceRealCollect(DeviceRealCollectViewModel model)
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            ApiResult result = new ApiResult();
+
+            #region 参数校验
+            if (model?.eqRealCollect == null || model.eqRealCollect.Count == 0)
+            {
+                result.ErrCode = 500;
+                result.IsSuccess = false;
+                result.Message = "采集设备集合无数据";
+                result.Timestamp = DateTime.Now.ToString();
+                return toResponse(result);
+            }
+            #endregion
+
+            try
+            {
+                #region 内存实时采集缓存刷新
+                // 先刷新内存实时采集缓存，保持和V1一致：大屏读取的实时数据优先更新。
+                long beforePublishMilliseconds = stopwatch.ElapsedMilliseconds;
+                GlobalRealCollectViewModel realCollectViewModel = new GlobalRealCollectViewModel();
+                realCollectViewModel.eqRealCollect = model.eqRealCollect;
+                DeviceDriver.Instance.PublishRealCollect(realCollectViewModel);
+                long publishMilliseconds = stopwatch.ElapsedMilliseconds - beforePublishMilliseconds;
+                #endregion
+
+                #region 初始化待写入数据集合
+                List<tn_dts_equireallogs> logs = new List<tn_dts_equireallogs>();
+                List<tn_dts_equialarmlogs> alarmLogs = new List<tn_dts_equialarmlogs>();
+                List<MongoEquialarmlogs> mogoAlarmLogs = new List<MongoEquialarmlogs>();
+                #endregion
+
+                #region 构建设备采集日志并刷新Mongo最新值
+                long buildLogsMilliseconds = 0;
+                long mongoMilliseconds = 0;
+                foreach (var device in model.eqRealCollect)
+                {
+                    if (device == null)
+                    {
+                        continue;
+                    }
+
+                    long beforeSingleBuildLogsMilliseconds = stopwatch.ElapsedMilliseconds;
+                    if (device.collectItem != null && device.collectItem.Count > 0)
+                    {
+                        foreach (var item in device.collectItem)
+                        {
+                            if (item == null)
+                            {
+                                continue;
+                            }
+
+                            DateTime collectTime;
+                            if (!DateTime.TryParse(item.collectTime, out collectTime))
+                            {
+                                // 采集时间格式异常时使用当前时间兜底，避免单条异常数据导致整个接口失败。
+                                collectTime = DateTime.Now;
+                            }
+
+                            logs.Add(new tn_dts_equireallogs()
+                            {
+                                cn_guid = Guid.NewGuid().ToString(),
+                                cn_s_equireallogs_no = device.deviceNo,
+                                cn_s_equireallogs_name = device.deviceName,
+                                cn_t_equireallogs_timestamp = collectTime,
+                                cn_s_equireallogs_itemname = item.collectItemName,
+                                cn_s_equireallogs_objectname = item.collectObjectName,
+                                cn_s_equireallogs_objectval = item.collectObjectVal,
+                                cn_s_equireallogs_objectvalunit = item.collectObjectUnit
+                            });
+
+                            // V1这里的状态报警判断使用cacheDevice.errCode和自身比较，实际不会产生报警。
+                            // V2暂不改变报警口径，避免高频接口上线后产生额外报警数据。
+                        }
+                    }
+                    buildLogsMilliseconds += stopwatch.ElapsedMilliseconds - beforeSingleBuildLogsMilliseconds;
+
+                    long beforeSingleMongoMilliseconds = stopwatch.ElapsedMilliseconds;
+                    // MongoDB存储最新值目前仍使用逐设备查询和更新。
+                    // 每台设备的collectItem不同，不能直接使用UpdateManay统一更新，否则会把多台设备更新成同一份数据。
+                    var eqWhere = Builders<MongoRealCollect>.Filter.Eq(o => o.deviceNo, device.deviceNo);
+                    MongoRealCollect mogoRealCollect = MongoDBSingleton.Instance.FindOneFilter(eqWhere);
+                    if (mogoRealCollect == null)
+                    {
+                        mogoRealCollect = new MongoRealCollect();
+                        mogoRealCollect.deviceNo = device.deviceNo;
+                        mogoRealCollect.deviceName = device.deviceName;
+                        mogoRealCollect.deviceType = device.deviceType;
+                        mogoRealCollect.onlineStatus = device.onlineStatus;
+                        mogoRealCollect.collectItemCount = device.collectItemCount;
+                        mogoRealCollect.collectItem = device.collectItem;
+                        MongoDBSingleton.Instance.Add(mogoRealCollect);
+                    }
+                    else
+                    {
+                        mogoRealCollect.deviceNo = device.deviceNo;
+                        mogoRealCollect.deviceName = device.deviceName;
+                        mogoRealCollect.deviceType = device.deviceType;
+                        mogoRealCollect.onlineStatus = device.onlineStatus;
+                        mogoRealCollect.collectItemCount = device.collectItemCount;
+                        mogoRealCollect.collectItem = device.collectItem;
+                        MongoDBSingleton.Instance.Update(mogoRealCollect, mogoRealCollect._id.ToString());
+                    }
+                    mongoMilliseconds += stopwatch.ElapsedMilliseconds - beforeSingleMongoMilliseconds;
+                }
+                #endregion
+
+                #region 批量写入采集日志和报警日志
+                long beforeSqlMilliseconds = stopwatch.ElapsedMilliseconds;
+                if (logs.Count > 0)
+                {
+                    _RealLogsService.BatchAdd(logs);
+                }
+
+                if (alarmLogs.Count > 0)
+                {
+                    _AlarmLogsService.BatchAdd(alarmLogs);
+                }
+
+                if (mogoAlarmLogs.Count > 0)
+                {
+                    MongoDBSingleton.Instance.InsertMany<MongoEquialarmlogs>(mogoAlarmLogs);
+                }
+                long sqlMilliseconds = stopwatch.ElapsedMilliseconds - beforeSqlMilliseconds;
+                #endregion
+
+                #region 组装成功响应
+                result.ErrCode = 200;
+                result.IsSuccess = true;
+                result.Message = "成功";
+                result.Timestamp = DateTime.Now.ToString();
+                #endregion
+
+                #region 慢日志监控
+                if (stopwatch.ElapsedMilliseconds >= ConveyorSlowLogMilliseconds)
+                {
+                    LogHelper.Info("DeviceRealCollect接口总耗时：" + stopwatch.ElapsedMilliseconds
+                        + "ms，设备数量：" + model.eqRealCollect.Count
+                        + "，采集日志数量：" + logs.Count
+                        + "，内存刷新耗时：" + publishMilliseconds
+                        + "ms，日志构建耗时：" + buildLogsMilliseconds
+                        + "ms，Mongo最新值耗时：" + mongoMilliseconds
+                        + "ms，SQL日志写入耗时：" + sqlMilliseconds + "ms");
+                }
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                #region 异常响应
+                result.ErrCode = 500;
+                result.IsSuccess = false;
+                result.Message = "DeviceRealCollect接口异常-原因=" + ex.Message;
+                result.Timestamp = DateTime.Now.ToString();
+                LogHelper.Info("DeviceRealCollect接口异常，总耗时：" + stopwatch.ElapsedMilliseconds + "ms，异常原因：" + ex.Message);
+                #endregion
+            }
+
             return toResponse(result);
         }
         #endregion
@@ -906,7 +1133,6 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
         //}
         #endregion
 
-
         #region 物资查询位置定位接口
         ///// <summary>
         ///// 物资查询位置定位接口
@@ -1090,14 +1316,14 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
         }
         #endregion
 
-        #region 开放堆垛车数据同步接口
+        #region 开放堆垛车数据同步接口(旧版本)
         /// <summary>
-        /// 开放堆垛车数据同步接口
+        /// 开放堆垛车数据同步接口(旧版本)
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> StackerRealCollect(StackerRealCollectViewModel model)
+        public async Task<IActionResult> StackerRealCollect_Old(StackerRealCollectViewModel model)
         {
             await Task.Run(() =>
             {
@@ -1189,14 +1415,118 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
         }
         #endregion
 
-        #region 开放RGV数据同步接口
+        #region 开放堆垛车数据同步接口(新版本)
         /// <summary>
-        /// 开放RGV数据同步接口
+        /// 开放堆垛车数据同步接口(新版本) 优化20260507
+        /// </summary>
+        ///  await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString); 优化WebSocket发送，解决数据量大时发送不及时问题
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> StackerRealCollect(StackerRealCollectViewModel model)
+        {
+            ApiResult result = new ApiResult();
+            if (model?.Stacker == null || model.Stacker.Count == 0)
+            {
+                result.ErrCode = 500;
+                result.IsSuccess = false;
+                result.Message = "堆垛机集合无数据";
+                result.Timestamp = DateTime.Now.ToString();
+                return toResponse(result);
+            }
+            string sendJSONString = JsonConvert.SerializeObject(model);
+            await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString);
+            //string log = "外部在" + DateTime.Now.ToString() + "调用开放堆垛车数据同步接口，传入数据为：" + sendJSONString;
+            //LogHelper.Info(log);
+            try
+            {
+                if (model != null && model.Stacker.Count > 0)
+                {
+                    List<tn_dts_equialarmlogs> alarmLogs = new List<tn_dts_equialarmlogs>();//设备异常表
+                    List<MongoEquialarmlogs> mogoAlarmLogs = new List<MongoEquialarmlogs>();//设备异常表
+                    DeviceRealCollectViewModel _deviceRealCollect = new DeviceRealCollectViewModel();
+                    foreach (var stacker in model.Stacker)
+                    {
+
+                        var cacheDevice = DeviceDriver.Instance.StateList.FirstOrDefault(it => it.deviceCode == stacker.Code);
+                        string errCode = stacker.ErrCode;
+                        string errMsg = stacker.ErrMsg;
+                        if (cacheDevice != null && cacheDevice.errCode != errCode)
+                        {
+                            //增加到设备异常表
+                            alarmLogs.Add(new tn_dts_equialarmlogs()
+                            {
+                                cn_guid = Guid.NewGuid().ToString(),
+                                cn_s_equialarmlogs_errcode = errCode,
+                                cn_s_equialarmlogs_errmsg = errMsg,
+                                cn_s_equialarmlogs_no = stacker.Code,
+                                cn_s_equialarmlogs_name = stacker.Name,
+                                cn_t_equialarmlogs_timestamp = DateTime.Now
+                            });
+
+                            //异常插入到Mongo
+                            mogoAlarmLogs.Add(new MongoEquialarmlogs()
+                            {
+                                errCode = errCode,
+                                errMsg = errMsg,
+                                deviceCode = stacker.Code,
+                                deviceName = stacker.Name,
+                                timestamp = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc)
+                            });
+                        }
+
+                        DeviceDriver.Instance.PublishDevices(stacker.Code, stacker.Name, "堆垛机", stacker.State, errCode, errMsg, DateTime.Now);
+
+                        EQRealCollectModel _EQRealCollectModel = new EQRealCollectModel();
+                        _EQRealCollectModel.deviceNo = stacker.Code;
+                        _EQRealCollectModel.deviceName = stacker.Name;
+                        _EQRealCollectModel.deviceType = "堆垛机";
+                        _EQRealCollectModel.onlineStatus = stacker.State;
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "堆垛机", collectObjectName = "任务类型", collectObjectVal = stacker.TaskType, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "堆垛机", collectObjectName = "任务号", collectObjectVal = stacker.TaskNo, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "堆垛机", collectObjectName = "目的位置", collectObjectVal = stacker.EndStation, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "堆垛机", collectObjectName = "托盘类型", collectObjectVal = stacker.TrayType, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "堆垛机", collectObjectName = "运行状态", collectObjectVal = stacker.State, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "堆垛机", collectObjectName = "货物信息", collectObjectVal = stacker.GoodsInfo, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItemCount = _EQRealCollectModel.collectItem.Count.ToString();
+                        _deviceRealCollect.eqRealCollect.Add(_EQRealCollectModel);
+                    }
+
+                    if (alarmLogs.Count > 0)
+                        _AlarmLogsService.BatchAdd(alarmLogs);
+
+                    if (mogoAlarmLogs.Count > 0)
+                        MongoDBSingleton.Instance.InsertMany<MongoEquialarmlogs>(mogoAlarmLogs);
+
+                    if (_deviceRealCollect.eqRealCollect.Count > 0)
+                    {
+                        DeviceRealCollect(_deviceRealCollect);
+                    }
+                }
+                result.ErrCode = 200;
+                result.IsSuccess = true;
+                result.Message = "成功";
+                result.Timestamp = DateTime.Now.ToString();
+            }
+            catch (Exception ex)
+            {
+                result.ErrCode = 500;
+                result.IsSuccess = false;
+                result.Message = "StackingtruckRealCollect接口异常-原因=" + ex.Message;
+                result.Timestamp = DateTime.Now.ToString();
+            }
+            return toResponse(result);
+        }
+        #endregion
+
+        #region 开放RGV数据同步接口(旧版本)
+        /// <summary>
+        /// 开放RGV数据同步接口(旧版本)    
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> RGVRealCollect(RGVRealCollectViewModel model)
+        public async Task<IActionResult> RGVRealCollect_Old(RGVRealCollectViewModel model)
         {
             await Task.Run(() =>
             {
@@ -1289,14 +1619,120 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
         }
         #endregion
 
-        #region 开放输送线数据同步接口
+        #region 开放RGV数据同步接口(新版本)
         /// <summary>
-        /// 开放输送线数据同步接口
+        /// 开放RGV数据同步接口(新版本-优化20260507)
+        /// </summary>
+        /// await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString); 优化WebSocket发送，解决数据量大时发送不及时问题   
+        /// DeviceDriver.Instance.PublishDevicesV2(rgv.Code, rgv.Name, "RGV", rgv.State, errCode, errMsg, DateTime.Now); 优化设备状态发布，增加新版本方法PublishDevicesV2，解决数据量大时发布不及时问题
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> RGVRealCollect(RGVRealCollectViewModel model)
+        {
+            ApiResult result = new ApiResult();
+            if (model?.RGV == null || model.RGV.Count == 0)
+            {
+                result.ErrCode = 500;
+                result.IsSuccess = false;
+                result.Message = "RGV集合无数据";
+                result.Timestamp = DateTime.Now.ToString();
+                return toResponse(result);
+            }
+            string sendJSONString = JsonConvert.SerializeObject(model);
+            await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString);
+            //string log = "外部在" + DateTime.Now.ToString() + "调用开放RGV数据同步接口，传入数据为：" + sendJSONString;
+            //LogHelper.Info(log);
+            try
+            {
+                if (model != null && model.RGV.Count > 0)
+                {
+                    List<tn_dts_equialarmlogs> alarmLogs = new List<tn_dts_equialarmlogs>();//设备异常表
+                    List<MongoEquialarmlogs> mogoAlarmLogs = new List<MongoEquialarmlogs>();//设备异常表
+                    DeviceRealCollectViewModel _deviceRealCollect = new DeviceRealCollectViewModel();
+                    foreach (var rgv in model.RGV)
+                    {
+
+                        var cacheDevice = DeviceDriver.Instance.StateList.FirstOrDefault(it => it.deviceCode == rgv.Code);
+                        string errCode = rgv.ErrCode;
+                        string errMsg = rgv.ErrMsg;
+                        if (cacheDevice != null && cacheDevice.errCode != errCode)
+                        {
+                            //增加到设备异常表
+                            alarmLogs.Add(new tn_dts_equialarmlogs()
+                            {
+                                cn_guid = Guid.NewGuid().ToString(),
+                                cn_s_equialarmlogs_errcode = errCode,
+                                cn_s_equialarmlogs_errmsg = errMsg,
+                                cn_s_equialarmlogs_no = rgv.Code,
+                                cn_s_equialarmlogs_name = rgv.Name,
+                                cn_t_equialarmlogs_timestamp = DateTime.Now
+                            });
+
+                            //异常插入到Mongo
+                            mogoAlarmLogs.Add(new MongoEquialarmlogs()
+                            {
+                                errCode = errCode,
+                                errMsg = errMsg,
+                                deviceCode = rgv.Code,
+                                deviceName = rgv.Name,
+                                timestamp = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc)
+                            });
+                        }
+
+                        DeviceDriver.Instance.PublishDevicesV2(rgv.Code, rgv.Name, "RGV", rgv.State, errCode, errMsg, DateTime.Now);
+
+                        EQRealCollectModel _EQRealCollectModel = new EQRealCollectModel();
+                        _EQRealCollectModel.deviceNo = rgv.Code;
+                        _EQRealCollectModel.deviceName = rgv.Name;
+                        _EQRealCollectModel.deviceType = "RGV";
+                        _EQRealCollectModel.onlineStatus = rgv.State;
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "RGV", collectObjectName = "任务号", collectObjectVal = rgv.TaskNo, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "RGV", collectObjectName = "起点位置", collectObjectVal = rgv.StartStation, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "RGV", collectObjectName = "目的位置", collectObjectVal = rgv.EndStation, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "RGV", collectObjectName = "托盘类型", collectObjectVal = rgv.TrayType, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "RGV", collectObjectName = "运行状态", collectObjectVal = rgv.State, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "RGV", collectObjectName = "货物信息", collectObjectVal = rgv.GoodsInfo, collectObjectUnit = "", collectTime = DateTime.Now.ToString() });
+                        _EQRealCollectModel.collectItemCount = _EQRealCollectModel.collectItem.Count.ToString();
+                        _deviceRealCollect.eqRealCollect.Add(_EQRealCollectModel);
+                    }
+
+                    if (alarmLogs.Count > 0)
+                        _AlarmLogsService.BatchAdd(alarmLogs);
+
+                    if (mogoAlarmLogs.Count > 0)
+                        MongoDBSingleton.Instance.InsertMany<MongoEquialarmlogs>(mogoAlarmLogs);
+
+                    if (_deviceRealCollect.eqRealCollect.Count > 0)
+                    {
+                        DeviceRealCollect(_deviceRealCollect);
+                    }
+                }
+
+                result.ErrCode = 200;
+                result.IsSuccess = true;
+                result.Message = "成功";
+                result.Timestamp = DateTime.Now.ToString();
+            }
+            catch (Exception ex)
+            {
+                result.ErrCode = 500;
+                result.IsSuccess = false;
+                result.Message = "RGVRealCollect接口异常-原因=" + ex.Message;
+                result.Timestamp = DateTime.Now.ToString();
+            }
+            return toResponse(result);
+        }
+        #endregion
+
+        #region 开放输送线数据同步接口(旧版本)
+        /// <summary>
+        /// 开放输送线数据同步接口(旧版本)    
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> ConveyorRealCollect(ConveyorRealCollectViewModel model)
+        public async Task<IActionResult> ConveyorRealCollect_Old(ConveyorRealCollectViewModel model)
         {
             await Task.Run(() =>
             {
@@ -1431,6 +1867,183 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
         }
         #endregion
 
+        #region 开放输送线数据同步接口(新版本)
+        /// <summary>
+        /// 开放输送线数据同步接口
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        /// <remarks>开放输送线数据同步接口(新版本) 
+        ///  await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString);优化WebSocket发送，解决数据量大时发送不及时问题
+        /// </remarks>
+        [HttpPost]
+        public IActionResult ConveyorRealCollect(ConveyorRealCollectViewModel model)
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            ApiResult result = new ApiResult();
+            if (model?.Conveyor == null || model.Conveyor.Count == 0)
+            {
+                result.ErrCode = 500;
+                result.IsSuccess = false;
+                result.Message = "输送线集合无数据";
+                result.Timestamp = DateTime.Now.ToString();
+                return toResponse(result);
+            }
+
+            string sendJSONString = JsonConvert.SerializeObject(model);
+
+            // WebSocket只负责刷新大屏，不应阻塞第三方接口返回。
+            // 如果某个大屏客户端网络异常，后台任务会被隔离，避免第三方HttpClient 50秒超时。
+            _ = SendConveyorWebSocketAsync(sendJSONString, model.Conveyor.Count);
+
+            try
+            {
+                List<tn_dts_equialarmlogs> alarmLogs = new List<tn_dts_equialarmlogs>();//设备异常表
+                List<MongoEquialarmlogs> mogoAlarmLogs = new List<MongoEquialarmlogs>();//设备异常表
+                DeviceRealCollectViewModel _deviceRealCollect = new DeviceRealCollectViewModel();
+                foreach (var conveyor in model.Conveyor)
+                {
+                    DateTime now = DateTime.Now;
+                    string collectTime = now.ToString();
+                    var firstGoods = conveyor.GoodsList != null && conveyor.GoodsList.Count >= 1 ? conveyor.GoodsList[0] : null;
+
+                    var cacheDevice = DeviceDriver.Instance.StateList.FirstOrDefault(it => it.deviceCode == conveyor.Code);
+                    string errCode = conveyor.ErrCode;
+                    string errMsg = conveyor.ErrMsg;
+                    if (cacheDevice != null && cacheDevice.errCode != errCode)
+                    {
+                        // 只有异常码发生变化时才记录报警，避免2秒一次的接口频率造成重复报警。
+                        alarmLogs.Add(new tn_dts_equialarmlogs()
+                        {
+                            cn_guid = Guid.NewGuid().ToString(),
+                            cn_s_equialarmlogs_errcode = errCode,
+                            cn_s_equialarmlogs_errmsg = errMsg,
+                            cn_s_equialarmlogs_no = conveyor.Code,
+                            cn_s_equialarmlogs_name = conveyor.Name,
+                            cn_t_equialarmlogs_timestamp = now
+                        });
+
+                        // Mongo报警也只在状态变化时写入，和关系库报警保持一致。
+                        mogoAlarmLogs.Add(new MongoEquialarmlogs()
+                        {
+                            errCode = errCode,
+                            errMsg = errMsg,
+                            deviceCode = conveyor.Code,
+                            deviceName = conveyor.Name,
+                            timestamp = DateTime.SpecifyKind(now, DateTimeKind.Utc)
+                        });
+                    }
+
+                    DeviceDriver.Instance.PublishDevices(conveyor.Code, "输送线", "输送线", conveyor.State, errCode, errMsg, now);
+
+                    EQRealCollectModel _EQRealCollectModel = new EQRealCollectModel();
+                    _EQRealCollectModel.deviceNo = conveyor.Code;
+                    _EQRealCollectModel.deviceName = conveyor.Name;
+                    _EQRealCollectModel.deviceType = "输送线";
+                    _EQRealCollectModel.onlineStatus = conveyor.State;
+                    _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "输送线", collectObjectName = "线体编号", collectObjectVal = conveyor.LineNo, collectObjectUnit = "", collectTime = collectTime });
+                    if (conveyor.Signal.HasValue && conveyor.Signal.Value)
+                    {
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "输送线", collectObjectName = "光电信号", collectObjectVal = conveyor.Signal.ToString(), collectObjectUnit = "", collectTime = collectTime });
+                    }
+
+                    _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "输送线", collectObjectName = "托盘类型", collectObjectVal = firstGoods == null ? "" : firstGoods.TrayType, collectObjectUnit = "", collectTime = collectTime });
+                    _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "输送线", collectObjectName = "任务号", collectObjectVal = firstGoods == null ? "" : firstGoods.TaskNo, collectObjectUnit = "", collectTime = collectTime });
+                    _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "输送线", collectObjectName = "外形检测", collectObjectVal = firstGoods == null ? "" : firstGoods.ShapeCheck, collectObjectUnit = "", collectTime = collectTime });
+                    _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "输送线", collectObjectName = "检测结果", collectObjectVal = firstGoods == null ? "" : firstGoods.ShapeInfo, collectObjectUnit = "", collectTime = collectTime });
+                    _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "输送线", collectObjectName = "托盘扫码", collectObjectVal = firstGoods == null ? "" : firstGoods.Scancode, collectObjectUnit = "", collectTime = collectTime });
+                    if (conveyor.GoodsList != null && conveyor.Equitype == 1)
+                    {
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "输送线", collectObjectName = "提升层数", collectObjectVal = conveyor.Equilayer.ToString(), collectObjectUnit = "", collectTime = collectTime });
+                        _EQRealCollectModel.collectItem.Add(new CollectItemModel() { collectItemName = "输送线", collectObjectName = "提升高度", collectObjectVal = conveyor.Equiheight.ToString(), collectObjectUnit = "mm", collectTime = collectTime });
+                    }
+                    _EQRealCollectModel.collectItemCount = _EQRealCollectModel.collectItem.Count.ToString();
+                    _deviceRealCollect.eqRealCollect.Add(_EQRealCollectModel);
+                }
+
+                if (alarmLogs.Count > 0)
+                {
+                    _AlarmLogsService.BatchAdd(alarmLogs);
+                }
+
+                if (mogoAlarmLogs.Count > 0)
+                {
+                    MongoDBSingleton.Instance.InsertMany<MongoEquialarmlogs>(mogoAlarmLogs);
+                }
+
+                if (_deviceRealCollect.eqRealCollect.Count > 0)
+                {
+                    long beforeDeviceRealCollectMilliseconds = stopwatch.ElapsedMilliseconds;
+                    DeviceRealCollect(_deviceRealCollect);
+
+                    // DeviceRealCollect内部包含Mongo最新值和历史采集日志写入，是偶发超时的重点观察点。
+                    long deviceRealCollectMilliseconds = stopwatch.ElapsedMilliseconds - beforeDeviceRealCollectMilliseconds;
+                    if (deviceRealCollectMilliseconds >= ConveyorSlowLogMilliseconds)
+                    {
+                        LogHelper.Info("ConveyorRealCollect DeviceRealCollect耗时：" + deviceRealCollectMilliseconds + "ms，输送线数量：" + model.Conveyor.Count);
+                    }
+                }
+
+                result.ErrCode = 200;
+                result.IsSuccess = true;
+                result.Message = "成功";
+                result.Timestamp = DateTime.Now.ToString();
+
+                if (stopwatch.ElapsedMilliseconds >= ConveyorSlowLogMilliseconds)
+                {
+                    LogHelper.Info("ConveyorRealCollect接口总耗时：" + stopwatch.ElapsedMilliseconds + "ms，输送线数量：" + model.Conveyor.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                result.ErrCode = 500;
+                result.IsSuccess = false;
+                result.Message = "ConveyorRealCollect接口异常-原因=" + ex.Message;
+                result.Timestamp = DateTime.Now.ToString();
+                LogHelper.Info("ConveyorRealCollect接口异常，总耗时：" + stopwatch.ElapsedMilliseconds + "ms，异常原因：" + ex.Message);
+            }
+            return toResponse(result);
+        }
+
+        /// <summary>
+        /// 输送线WebSocket后台推送。
+        /// 第三方系统2秒一次调用接口，WebSocket客户端异常时不能阻塞HTTP请求返回。
+        /// </summary>
+        private static async Task SendConveyorWebSocketAsync(string sendJSONString, int conveyorCount)
+        {
+            bool hasLock = false;
+            try
+            {
+                // 上一次WebSocket推送未完成时，说明大屏连接或网络可能已经变慢。
+                // 这里跳过本次大屏推送，避免后台任务堆积并拖垮接口线程池。
+                hasLock = await _conveyorWebSocketSendLock.WaitAsync(0);
+                if (!hasLock)
+                {
+                    LogHelper.Info("ConveyorRealCollect WebSocket上一批仍未完成，本次跳过推送，输送线数量：" + conveyorCount);
+                    return;
+                }
+
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                await WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString);
+                if (stopwatch.ElapsedMilliseconds >= ConveyorSlowLogMilliseconds)
+                {
+                    LogHelper.Info("ConveyorRealCollect WebSocket推送耗时：" + stopwatch.ElapsedMilliseconds + "ms，输送线数量：" + conveyorCount);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Info("ConveyorRealCollect WebSocket推送异常：" + ex.Message);
+            }
+            finally
+            {
+                if (hasLock)
+                {
+                    _conveyorWebSocketSendLock.Release();
+                }
+            }
+        }
+        #endregion
+
         #region 获取菜单权限
         /// <summary>
         /// 获取菜单权限
@@ -1518,13 +2131,42 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                         // 提取路径和查询字符串部分  
                         string pathAndQuery = uri.PathAndQuery;
                         ApiResult apiResLocation = new ApiResult();
-                        if (!(bitCode is null))
+                        if (!(bitCode is null) || !(trayCode is null))
                         {
+                            // 根据位号查询载具上的物料信息。
+                            // WMS接口参数固定为bitCode、trayCode、rockCode、boxCode，未传的参数使用空字符串占位。
+                            string query = "?bitCode=" + Uri.EscapeDataString(bitCode ?? "")
+                                + "&trayCode=" + Uri.EscapeDataString(trayCode ?? "")
+                                + "&rockCode=" + Uri.EscapeDataString(rockCode ?? "")
+                                + "&boxCode=" + Uri.EscapeDataString(boxCode ?? "");
+                            string strGoodsInfo = WebApiManager.HttpGet(baseUrl, pathAndQuery + query, ref apiResLocation);
+                            NewGoodsInfoViewModel newGoodsInfo = JsonConvert.DeserializeObject<NewGoodsInfoViewModel>(strGoodsInfo);
 
-                        }
-                        else if (!(trayCode is null))
-                        {
+                            if (newGoodsInfo is null)
+                            {
+                                receiveresult = "请求WMS获取载具上的物料信息接口-位号-接口返回为空";
+                            }
+                            else
+                            {
+                                if (!(newGoodsInfo.ItemRow is null))
+                                {
+                                    ItemRowPlus item = new ItemRowPlus();
+                                    item.itemCode = newGoodsInfo.ItemRow.itemCode;
+                                    item.itemName = newGoodsInfo.ItemRow.itemName;
+                                    item.trayCode = newGoodsInfo.ItemRow.trayCode;
+                                    item.remarks = newGoodsInfo.ItemRow.remarks;
+                                    item.ext1 = newGoodsInfo.ItemRow.ext1;
+                                    item.ext2 = newGoodsInfo.ItemRow.ext2;
+                                    itemRowPlusList.Add(item);
+                                }
 
+                                if (!(newGoodsInfo.RackInfo is null))
+                                {
+                                    rackInfoViewModel = newGoodsInfo.RackInfo;
+                                }
+
+                                receiveresult = "true";
+                            }
                         }
                         else if (!(rockCode is null))
                         {
@@ -1667,6 +2309,47 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
             {
                 return new JsonResult("token is null");
             }
+        }
+        #endregion
+
+        #region 手动触发全量货位同步
+        /// <summary>
+        /// 手动触发全量货位同步
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<IActionResult> syncFullLocation()
+        {
+            ApiResult result = new ApiResult();
+            UserSession user = GetSessionInfo();
+            if (user != null)
+            {
+                //RedisHelper.
+                LocationRealMonitorViewModel model = new LocationRealMonitorViewModel();
+                //从Redis获取全量的货位数据
+                await LocationRealMonitorDriver.Instance.LocationRealMonitorProc(model);
+
+
+                result.IsSuccess = true;
+                result.ErrCode = 0;
+                result.Message = "";
+                string receiveresult = JsonConvert.SerializeObject(result);
+                OpenLog log = new OpenLog()
+                {
+                    logtype = "接口",
+                    clientip = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    receiveurl = "/api/dts/syncFullLocation",
+                    receiveresult = receiveresult
+                };
+                UniversallyAddLog(log);
+            }
+            else
+            {
+                result.IsSuccess = false;
+                result.ErrCode = 500;
+                result.Message = "token is null";
+            }
+            return new JsonResult(result);
         }
         #endregion
     }
