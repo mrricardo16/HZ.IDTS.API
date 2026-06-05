@@ -4,6 +4,7 @@ using HZ.IDTSCore.Interfaces.IService.Sys;
 using HZ.IDTSCore.Model.Entity.Equipment;
 using HZ.IDTSCore.Model.Entity.Sys;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -29,7 +30,6 @@ namespace HZ.IDTSCore.Interfaces.Service.Sys
             string guid = Guid.NewGuid().ToString();
             DateTime nowTime = DateTime.Now;
             string fullFileName = guid + "_" + "idts_" + nowTime.ToString("yyyyMMddHHmmssfff") + ".dump";
-            // connectionString = Db.CurrentConnectionConfig.ConnectionString;
             //string outputPath = backupFilePath.Replace(@"\\", @"\") + fullFileName;
             string pgDumpPath = Db.Queryable<tn_dts_setting>().Where(it => it.cn_s_setting_keycode == "PostgreSQLPgdumpDiretory").Select(it => it.cn_s_setting_keyvalue).First();
             string outputPath = Path.Combine(backupFilePath, fullFileName);
@@ -41,26 +41,43 @@ namespace HZ.IDTSCore.Interfaces.Service.Sys
                 returnMessage.Message = "传入的备份路径不存在，请重试！";
                 return returnMessage;
             }
-            if (!File.Exists(pgDumpPath + ".exe"))
+            string pgDumpFileName = pgDumpPath;
+            if (!File.Exists(pgDumpFileName))
+            {
+                pgDumpFileName = pgDumpPath + ".exe";
+            }
+            if (!File.Exists(pgDumpFileName))
             {
                 returnMessage.IsSuccess = false;
                 returnMessage.Message = "系统设置中的PostgreSQL的pg_dump路径找不到pg_dump文件，请重试！";
                 return returnMessage;
             }
-            string dbName = Db.Queryable<tn_dts_setting>().Where(it => it.cn_s_setting_keycode == "DatabaseName").Select(it => it.cn_s_setting_keyvalue).First();
-            string dbUser = Db.Queryable<tn_dts_setting>().Where(it => it.cn_s_setting_keycode == "DatabaseUser").Select(it => it.cn_s_setting_keyvalue).First();
-            string dbPassword = Db.Queryable<tn_dts_setting>().Where(it => it.cn_s_setting_keycode == "DatabasePassword").Select(it => it.cn_s_setting_keyvalue).First();
-            string pgDumpArguments = $"-Fc -f \"{outputPath}\" -U {dbUser} {dbName}";
-            if (string.IsNullOrEmpty(dbName) || string.IsNullOrEmpty(dbUser) || string.IsNullOrEmpty(dbPassword))
+            Dictionary<string, string> connectionItems = ParseConnectionString(Db.CurrentConnectionConfig.ConnectionString);
+            string dbHost = GetConnectionValue(connectionItems, "HOST");
+            string dbPort = GetConnectionValue(connectionItems, "PORT");
+            string dbName = GetConnectionValue(connectionItems, "DATABASE");
+            string dbUser = GetConnectionValue(connectionItems, "USER ID");
+            string dbPassword = GetConnectionValue(connectionItems, "PASSWORD");
+            if (string.IsNullOrEmpty(dbHost) || string.IsNullOrEmpty(dbPort) || string.IsNullOrEmpty(dbName) || string.IsNullOrEmpty(dbUser) || string.IsNullOrEmpty(dbPassword))
             {
                 returnMessage.IsSuccess = false;
-                returnMessage.Message = "系统设置中备份配置项有空项，请检查系统数据库名称、系统数据库用户名、系统数据库密码这三项！";
+                returnMessage.Message = "当前数据库连接串中备份配置项有空项，请检查HOST、PORT、DATABASE、USER ID、PASSWORD这五项！";
                 return returnMessage;
             }
+            string pgDumpArguments = $"-Fc -h {dbHost} -p {dbPort} -f \"{outputPath}\" -U {dbUser} {dbName}";
             using (Process process = new Process())
             {
-                process.StartInfo.FileName = pgDumpPath;
-                process.StartInfo.Arguments = pgDumpArguments;
+                process.StartInfo.FileName = pgDumpFileName;
+                process.StartInfo.ArgumentList.Add("-Fc");
+                process.StartInfo.ArgumentList.Add("-h");
+                process.StartInfo.ArgumentList.Add(dbHost);
+                process.StartInfo.ArgumentList.Add("-p");
+                process.StartInfo.ArgumentList.Add(dbPort);
+                process.StartInfo.ArgumentList.Add("-f");
+                process.StartInfo.ArgumentList.Add(outputPath);
+                process.StartInfo.ArgumentList.Add("-U");
+                process.StartInfo.ArgumentList.Add(dbUser);
+                process.StartInfo.ArgumentList.Add(dbName);
                 process.StartInfo.Environment["PGPASSWORD"] = dbPassword;
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.RedirectStandardOutput = true;
@@ -146,6 +163,45 @@ namespace HZ.IDTSCore.Interfaces.Service.Sys
 
         }
         #endregion
+
+        private Dictionary<string, string> ParseConnectionString(string connectionString)
+        {
+            Dictionary<string, string> connectionItems = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                return connectionItems;
+            }
+
+            string[] items = connectionString.Split(';');
+            foreach (string item in items)
+            {
+                if (string.IsNullOrWhiteSpace(item))
+                {
+                    continue;
+                }
+
+                int index = item.IndexOf('=');
+                if (index <= 0)
+                {
+                    continue;
+                }
+
+                string key = item.Substring(0, index).Trim();
+                string value = item.Substring(index + 1).Trim();
+                connectionItems[key] = value;
+            }
+
+            return connectionItems;
+        }
+
+        private string GetConnectionValue(Dictionary<string, string> connectionItems, string key)
+        {
+            if (connectionItems.TryGetValue(key, out string value))
+            {
+                return value;
+            }
+            return string.Empty;
+        }
 
         #region 保存接口
         /// <summary>
