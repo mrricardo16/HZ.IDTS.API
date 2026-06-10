@@ -28,6 +28,7 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -36,13 +37,13 @@ namespace HZ.IDTSCore.Api
 {
     public class Startup
     {
-        public List<Model.Entity.Sys.tn_dts_setting> SysSetList;
+        //public List<Model.Entity.Sys.tn_dts_setting> SysSetList;
         public List<tn_dts_goodsequipment> GoodsequipmentList;
         public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
             Env = env;
-            SysSetList = new List<tn_dts_setting>();
+            //SysSetList = new List<tn_dts_setting>();
             GoodsequipmentList = new List<tn_dts_goodsequipment>();
         }
 
@@ -60,11 +61,11 @@ namespace HZ.IDTSCore.Api
             bool dbConnectioned = false;//数据库链接状态
             try
             {
-                SysSetList = new Interfaces.Service.Sys.SettingService(new DbHelper.SessionInfo()
-                {
-                    token = "",
-                    splitDbCode = ""
-                }).GetAll();
+                //SysSetList = new Interfaces.Service.Sys.SettingService(new DbHelper.SessionInfo()
+                //{
+                //    token = "",
+                //    splitDbCode = ""
+                //}).GetAll();
                 GoodsequipmentList = new Interfaces.Service.SenarioTesting.GoodsequipmentService(new DbHelper.SessionInfo()
                 {
                     token = "",
@@ -72,7 +73,7 @@ namespace HZ.IDTSCore.Api
                 }).GetAll();
                 dbConnectioned = true;
 
-                SystemDriver.Instance.SysSetList = SysSetList;
+                //SystemDriver.Instance.SysSetList = SysSetList;
 
                 logger.Debug("StartupDebugger-2");
             }
@@ -86,7 +87,7 @@ namespace HZ.IDTSCore.Api
             bool iscors = false;
             var corsValue = Configuration["Startup:CorsIPs"];
             string[] CorsIPs;
-            var CorsIPsModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "CorsIPs");
+            var CorsIPsModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "CorsIPs");
             if (CorsIPsModel != null && !string.IsNullOrEmpty(CorsIPsModel.cn_s_setting_keyvalue))
             {
                 CorsIPs = CorsIPsModel.cn_s_setting_keyvalue.Split(',');
@@ -144,7 +145,7 @@ namespace HZ.IDTSCore.Api
 
             #region Api文档说明
             string ApiName = "";
-            var ApiNameModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "ApiName");
+            var ApiNameModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "ApiName");
             if (ApiNameModel != null && !string.IsNullOrEmpty(ApiNameModel.cn_s_setting_keyvalue)) ApiName = ApiNameModel.cn_s_setting_keyvalue;
             else ApiName = AppSettings.GetValue<string>("Startup:ApiName");
             if (string.IsNullOrEmpty(ApiName)) ApiName = "IDTSCoreApi";
@@ -200,7 +201,7 @@ namespace HZ.IDTSCore.Api
             #endregion
 
             string redis = Configuration["RedisServer:Mdg"];
-            var redisModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "RedisMDG");
+            var redisModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "RedisMDG");
             if (redisModel != null && !string.IsNullOrEmpty(redisModel.cn_s_setting_keyvalue))
             {
                 redis = redisModel.cn_s_setting_keyvalue;
@@ -216,15 +217,15 @@ namespace HZ.IDTSCore.Api
             string userName = Configuration["mongodb:userName"];
             string passWord = Configuration["mongodb:passWord"];
 
-            var MIPAddressModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MIPAddress");
+            var MIPAddressModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MIPAddress");
             if (MIPAddressModel != null && !string.IsNullOrEmpty(MIPAddressModel.cn_s_setting_keyvalue)) ipAddress = MIPAddressModel.cn_s_setting_keyvalue;
-            var MMDatabaseNameModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MDatabaseName");
+            var MMDatabaseNameModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MDatabaseName");
             if (MMDatabaseNameModel != null && !string.IsNullOrEmpty(MMDatabaseNameModel.cn_s_setting_keyvalue)) mongoDatabase = MMDatabaseNameModel.cn_s_setting_keyvalue;
-            var MPortModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MPort");
+            var MPortModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MPort");
             if (MPortModel != null && !string.IsNullOrEmpty(MPortModel.cn_s_setting_keyvalue)) port = MPortModel.cn_s_setting_keyvalue;
-            var MUserNameModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MUserName");
+            var MUserNameModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MUserName");
             if (MUserNameModel != null && !string.IsNullOrEmpty(MUserNameModel.cn_s_setting_keyvalue)) userName = MUserNameModel.cn_s_setting_keyvalue;
-            var MPassWordModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MPassWord");
+            var MPassWordModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MPassWord");
             if (MPassWordModel != null && !string.IsNullOrEmpty(MPassWordModel.cn_s_setting_keyvalue)) passWord = MPassWordModel.cn_s_setting_keyvalue;
             //ipAddress = "192.168.8.159";
             //mongoDatabase = "fyyj";
@@ -242,7 +243,7 @@ namespace HZ.IDTSCore.Api
             logger.Debug("StartupDebugger-5");
 
             SysConst.MDGApi = AppSettings.GetValue<string>("SysInterface:Mdg");
-            var MDGApiModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MDGApi");
+            var MDGApiModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "MDGApi");
             if (MDGApiModel != null && !string.IsNullOrEmpty(MDGApiModel.cn_s_setting_keyvalue)) SysConst.MDGApi = MDGApiModel.cn_s_setting_keyvalue;
             #region 加载项
             logger.Debug("StartupDebugger-6");
@@ -287,6 +288,7 @@ namespace HZ.IDTSCore.Api
             HelperHttpContext.serviceCollection = services;
 
             //将最新的自动备份信息写入全局变量
+            var backupsInitStopwatch = Stopwatch.StartNew();
             try
             {
                 BackupsDriver.Instance.DBackups = new Interfaces.Service.Sys.BackupsService(new DbHelper.SessionInfo()
@@ -295,12 +297,22 @@ namespace HZ.IDTSCore.Api
                     splitDbCode = ""
                 }).GetLatestSaveBackups();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // 启动阶段允许继续往下执行，但必须记录异常和耗时，避免初始化慢或失败时被静默吞掉。
+                LogHelper.Error("Startup初始化自动备份信息失败，耗时：" + backupsInitStopwatch.ElapsedMilliseconds + "ms，异常原因：" + ex.Message, ex);
+            }
+            finally
+            {
+                backupsInitStopwatch.Stop();
+                logger.Debug("Startup初始化自动备份信息耗时：" + backupsInitStopwatch.ElapsedMilliseconds + "ms");
+            }
             BackupsDriver.Instance.LastDBackups = BackupsDriver.Instance.DBackups;
             BackupsDriver.Instance.LastBackups = DateTime.Now;
             BackupsDriver.Instance.IsFirst = true;
             logger.Debug("StartupDebugger-7");
             //将最新的相机区域坐标系信息写入全局变量
+            var cameraAreaInitStopwatch = Stopwatch.StartNew();
             try
             {
                 CameraAreaDriver.Instance.LatestCameraAreaPointList = new Interfaces.Service.Sys.CameraAreaService(new DbHelper.SessionInfo()
@@ -309,12 +321,22 @@ namespace HZ.IDTSCore.Api
                     splitDbCode = ""
                 }).GetAllPoint();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // 启动阶段允许继续往下执行，但必须记录异常和耗时，方便定位相机区域初始化慢或失败。
+                LogHelper.Error("Startup初始化相机区域坐标系信息失败，耗时：" + cameraAreaInitStopwatch.ElapsedMilliseconds + "ms，异常原因：" + ex.Message, ex);
+            }
+            finally
+            {
+                cameraAreaInitStopwatch.Stop();
+                logger.Debug("Startup初始化相机区域坐标系信息耗时：" + cameraAreaInitStopwatch.ElapsedMilliseconds + "ms");
+            }
 
             #region 优化项
             // 时间：2026-05-29
             // 原逻辑：逐个执行 GoodscommandDriver.Instance.RefreshStockItemInformation。
             // 问题：货位设备数量较多时串行执行耗时长，会拖慢 API 站点启动。
+            var stockItemInitStopwatch = Stopwatch.StartNew();
             try
             {
                 foreach (var goodsequipment in GoodsequipmentList)
@@ -322,7 +344,16 @@ namespace HZ.IDTSCore.Api
                     GoodscommandDriver.Instance.RefreshStockItemInformationV2(goodsequipment.cn_guid);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // 启动阶段允许继续往下执行，但必须记录异常和耗时，方便定位货位数量大时的初始化瓶颈。
+                LogHelper.Error("Startup刷新货位库存信息失败，货位设备数量：" + (GoodsequipmentList == null ? 0 : GoodsequipmentList.Count) + "，耗时：" + stockItemInitStopwatch.ElapsedMilliseconds + "ms，异常原因：" + ex.Message, ex);
+            }
+            finally
+            {
+                stockItemInitStopwatch.Stop();
+                logger.Debug("Startup刷新货位库存信息耗时：" + stockItemInitStopwatch.ElapsedMilliseconds + "ms，货位设备数量：" + (GoodsequipmentList == null ? 0 : GoodsequipmentList.Count));
+            }
             #endregion
 
             if (dbConnectioned)
@@ -377,7 +408,7 @@ namespace HZ.IDTSCore.Api
                 app.UseSwaggerUI(c =>
                 {
                     string ApiName = "";
-                    var ApiNameModel = SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "ApiName");
+                    var ApiNameModel = SystemDriver.Instance.SysSetList.FirstOrDefault(p => p.cn_s_setting_keycode == "ApiName");
                     if (ApiNameModel != null && !string.IsNullOrEmpty(ApiNameModel.cn_s_setting_keyvalue)) ApiName = ApiNameModel.cn_s_setting_keyvalue;
                     else ApiName = AppSettings.GetValue<string>("Startup:ApiName");
                     if (string.IsNullOrEmpty(ApiName)) ApiName = "IDTSCoreApi";
@@ -423,7 +454,6 @@ namespace HZ.IDTSCore.Api
             var logger = NLog.Web.NLogBuilder.ConfigureNLog("NLog.config").GetCurrentClassLogger();
             logger.Debug("StartupDebugger-14");
             var assemblysServices = Assembly.Load("HZ.IDTSCore.Interfaces");
-            //var assemblysServices2 = Assembly.Load("HZ.WMSCore.AI");
             builder.RegisterAssemblyTypes(assemblysServices)
                 .InstancePerDependency()//瞬时单例
                .AsImplementedInterfaces()////自动以其实现的所有接口类型暴露（包括IDisposable接口）

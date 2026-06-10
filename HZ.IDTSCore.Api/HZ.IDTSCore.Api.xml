@@ -408,6 +408,16 @@
             <param name="dbPassword"></param>
             <returns></returns>
         </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.BuildLocationStateLogSummary(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.OpenApi.LocationStateWMS},System.String)">
+            <summary>
+            大集合日志只记录统计信息和少量样例，避免高频接口把完整 JSON 写入磁盘。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.BuildLocationRealMonitorLogSummary(HZ.IDTSCore.Model.Entity.OpenApi.LocationRealMonitorViewModel)">
+            <summary>
+            大集合日志只记录统计信息和少量样例，避免序列化完整 LocationRealMonitorViewModel。
+            </summary>
+        </member>
         <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.LocationRealMonitor(HZ.IDTSCore.Model.Entity.OpenApi.LocationRealMonitorViewModel)">
             <summary>
             开放货位同步接口

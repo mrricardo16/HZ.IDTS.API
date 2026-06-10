@@ -6,9 +6,9 @@
     <Description>P40WMS、P40LWMS、A40</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CSRedisCore" Version="3.6.5" />
+    <PackageReference Include="CSRedisCore" Version="3.8.803" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-    <PackageReference Include="sqlSugarCore" Version="5.0.9.1" />
+    <PackageReference Include="sqlSugarCore" Version="5.1.4.214" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HZ.CommonUtil\HZ.CommonUtil.csproj" />

@@ -259,7 +259,7 @@ namespace HZ.IDTSCore.Api
                         sendJSONString = JsonConvert.SerializeObject(DeviceDriver.Instance.RealCollectList);
                     }
 
-                    var res = WebSocketServer.SessionInstance.Instance.PLCSendAll(sendJSONString);
+                    var res = WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString);
                 }
                 Thread.Sleep(1000);
             }

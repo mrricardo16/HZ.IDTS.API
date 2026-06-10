@@ -33,29 +33,14 @@ namespace HZ.IDTSCore.Interfaces.Service.InterfaceAuth
         /// <returns></returns>
         public ApiResult SendRequest(tn_wms_interface_def model)
         {
-            // StringBuilder sendXml = new StringBuilder();
-
-            ////XML固定头部
-            //sendXml.Append("<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:jour=\"http://tbea/oracle/apps/ws/Journal.wsdl\" xmlns:typ=\"http://tbea/oracle/apps/ws/Journal.wsdl/types/\">");
-            //sendXml.AppendFormat("<soapenv:Header/>");
-            //sendXml.AppendFormat("<soapenv:Body>");
-            //sendXml.AppendFormat("<jour:glJournalMain>");
-
-            //sendXml.AppendFormat("<typ:User>");
-            //sendXml.AppendFormat("<typ:head>{0}</typ:head>", model.cn_s_header);
-            //sendXml.AppendFormat("<typ:sourceTrx>{0}</typ:sourceTrx>", model.cn_s_data);
-            //sendXml.AppendFormat("</typ:User>");
-
-            //sendXml.AppendFormat("</jour:glJournalMain>");
-            //sendXml.AppendFormat("</soapenv:Body>");
-            //sendXml.AppendFormat("</soapenv:Envelope>");
+            
             //输出日志
-            LogHelper.Info(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "发送XML：" + model.cn_s_send_content);
+            //LogHelper.Info(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "发送XML：" + model.cn_s_send_content);
 
             string reponseXml = string.Empty;
 
             bool success = Send_XML(model.cn_s_url, model.cn_s_send_content, out reponseXml);
-            LogHelper.Info(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "返回XML：" + reponseXml);
+            //LogHelper.Info(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "返回XML：" + reponseXml);
 
             if (!success)
             {

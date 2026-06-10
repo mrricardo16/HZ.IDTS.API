@@ -14,6 +14,182 @@ namespace HZ.CommonUtil.Helpers
 {
     public class WebApiManager
     {
+        private const int DefaultHttpTimeoutSeconds = 50;
+
+        /// <summary>
+        /// 共享HttpClient。
+        /// 时间：2026-06-03
+        /// 优化内容：避免每次请求都new HttpClient，减少高并发下端口耗尽、TIME_WAIT堆积和TCP重复建连成本。
+        /// 注意：不要把token、splitDb等动态请求头写到DefaultRequestHeaders，动态头统一放到HttpRequestMessage。
+        /// </summary>
+        private static readonly HttpClient SharedHttpClient = CreateHttpClient();
+
+        private class WebApiResponse
+        {
+            public bool IsSuccessStatusCode { get; set; }
+
+            public HttpStatusCode StatusCode { get; set; }
+
+            public string Content { get; set; }
+        }
+
+        private static HttpClient CreateHttpClient()
+        {
+            var handler = new HttpClientHandler()
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                // 保留老代码忽略证书校验的行为；生产环境建议改为校验证书或只对指定域名放行。
+                ServerCertificateCustomValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+            };
+
+            return new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(GetHttpTimeoutSeconds())
+            };
+        }
+
+        private static int GetHttpTimeoutSeconds()
+        {
+            int timeoutSeconds = AppSettings.GetValue<int>("AppSettings:HttpClientTimeoutSeconds");
+            if (timeoutSeconds <= 0)
+            {
+                timeoutSeconds = AppSettings.GetValue<int>("WebApiManager:TimeoutSeconds");
+            }
+            return timeoutSeconds > 0 ? timeoutSeconds : DefaultHttpTimeoutSeconds;
+        }
+
+        private static string NormalizeUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return "";
+            }
+            return url.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? url : "http://" + url;
+        }
+
+        private static string CombineUrl(string ipPort, string path)
+        {
+            return NormalizeUrl(ipPort).TrimEnd('/') + "/" + (path ?? "").TrimStart('/');
+        }
+
+        private static string AppendQueryString(string url, string paramStr)
+        {
+            if (string.IsNullOrWhiteSpace(paramStr))
+            {
+                return url;
+            }
+            return url + (url.Contains("?") ? "&" : "?") + paramStr.TrimStart('?');
+        }
+
+        private static string GetAcceptLanguage()
+        {
+            try
+            {
+                return HelperHttpContext.Current?.Request?.Headers["Accept-Language"].ToString();
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private static void AddRequestHeaders(HttpRequestMessage request, string token = "", string splitDbCode = "", Dictionary<string, string> headers = null)
+        {
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            string acceptLanguage = GetAcceptLanguage();
+            if (!string.IsNullOrWhiteSpace(acceptLanguage))
+            {
+                request.Headers.TryAddWithoutValidation("Accept-Language", acceptLanguage);
+            }
+
+            if (!string.IsNullOrWhiteSpace(splitDbCode))
+            {
+                request.Headers.TryAddWithoutValidation("splitDb", splitDbCode);
+            }
+
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                request.Headers.TryAddWithoutValidation("token", token);
+            }
+
+            if (headers == null)
+            {
+                return;
+            }
+
+            foreach (var header in headers)
+            {
+                if (string.IsNullOrWhiteSpace(header.Key))
+                {
+                    continue;
+                }
+
+                if (string.Equals(header.Key, "Content-Type", StringComparison.OrdinalIgnoreCase) && request.Content != null)
+                {
+                    request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(header.Value);
+                    continue;
+                }
+
+                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        }
+
+        private static async Task<WebApiResponse> SendAsync(HttpMethod method, string url, string data = "", string token = "", string splitDbCode = "", Dictionary<string, string> headers = null)
+        {
+            using (var request = new HttpRequestMessage(method, url))
+            {
+                if (method != HttpMethod.Get && data != null)
+                {
+                    request.Content = new StringContent(data, Encoding.UTF8, "application/json");
+                }
+
+                AddRequestHeaders(request, token, splitDbCode, headers);
+
+                using (var response = await SharedHttpClient.SendAsync(request).ConfigureAwait(false))
+                {
+                    return new WebApiResponse()
+                    {
+                        IsSuccessStatusCode = response.IsSuccessStatusCode,
+                        StatusCode = response.StatusCode,
+                        Content = await response.Content.ReadAsStringAsync().ConfigureAwait(false)
+                    };
+                }
+            }
+        }
+
+        private static string SendForApiResult(HttpMethod method, string url, string data, ref ApiResult res, string token = "", string splitDbCode = "", Dictionary<string, string> headers = null)
+        {
+            try
+            {
+                WebApiResponse response = SendAsync(method, url, data, token, splitDbCode, headers).GetAwaiter().GetResult();
+                if (response.IsSuccessStatusCode)
+                {
+                    res = ApiResult.Success();
+                    return response.Content;
+                }
+
+                res = ApiResult.Error(response.StatusCode.ToString(), 13010001);
+                return "";
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Error($"(13010001)访问[{url}]异常,[{ex.Message}]");
+                res = ApiResult.Error(ex.Message);
+                return "";
+            }
+        }
+
+        private static string CleanResponseString(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            return value.Replace("\\", "").TrimEnd('"').TrimStart('"');
+        }
+
         #region Web Request
         /// <summary>
         /// Get请求，ip端口和路由分开传参
@@ -30,65 +206,9 @@ namespace HZ.CommonUtil.Helpers
         /// <returns></returns>
         public static string HttpGet(string ipPort, string path, ref ApiResult res, string paramStr = "", string token = "",Dictionary<string,string> headers=null)
         {
-            string webUrl = "";
-            try
-            {
-                if (ipPort.StartsWith("http"))
-                    webUrl = ipPort + "/" + path.TrimStart('/');
-                else
-                    webUrl = "http://" + ipPort + "/" + path.TrimStart('/');
-
-                string Data = webUrl + (paramStr == "" ? "" : "?") + paramStr;
-
-                System.Net.ServicePointManager.ServerCertificateValidationCallback =
-                    ((sender, certificate, chain, sslPolicyErrors) => true);
-
-                using var client = new HttpClient();
-
-                // 添加 Token 到请求头
-                client.DefaultRequestHeaders.Add("token", token);
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Content-Type", "application/json");
-                if (HelperHttpContext.Current != null)
-                    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(HelperHttpContext.Current.Request.Headers["Accept-Language"].ToString());
-                try
-                {
-                    // 将请求头添加到 HttpClient
-                    if (headers != null)
-                    {
-                        foreach (var header in headers)
-                        {
-                            client.DefaultRequestHeaders.Add(header.Key, header.Value);
-                        }
-                    }
-                    // 发送 GET 请求
-                    var response = client.GetAsync(webUrl).Result;
-                    if (response.IsSuccessStatusCode)
-                    {
-                        // 读取响应内容
-                        var content = response.Content.ReadAsStringAsync().Result;
-                        res = ApiResult.Success();
-                        return content;
-                    }
-                    else
-                    {
-                        res = ApiResult.Error(response.StatusCode.ToString(), 13010001);
-                        return "";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogHelper.Error($"(13010001)访问[{webUrl}]异常,[{ex.Message}]");
-                    res = ApiResult.Error(ex.Message);
-                    return "";
-                }
-            }
-            catch (Exception ex)
-            {
-                res = ApiResult.Error(ex.Message);
-                return "";
-            }
-
-            }
+            string webUrl = AppendQueryString(CombineUrl(ipPort, path), paramStr);
+            return SendForApiResult(HttpMethod.Get, webUrl, null, ref res, token, "", headers);
+        }
 
         /// <summary>
         /// Post请求，ip端口和路由分开传参
@@ -106,140 +226,8 @@ namespace HZ.CommonUtil.Helpers
         /// <returns></returns>
         public static string HttpPost(string ipPort, string path, string data, ref ApiResult res, string token = "", string splitDbCode = "", Dictionary<string, string> headers = null)
         {
-            //string returnStr = "";
-
-            string url = "";
-            if (ipPort.StartsWith("http"))
-                url = ipPort + "/" + path.TrimStart('/');
-            else
-                url = "http://" + ipPort + "/" + path.TrimStart('/');
-            try
-            {
-                System.Net.ServicePointManager.ServerCertificateValidationCallback =
-                    ((sender, certificate, chain, sslPolicyErrors) => true);
-                using var client = new HttpClient();
-
-                // 添加 Token 到请求头
-                if (HelperHttpContext.Current!=null)
-                    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(HelperHttpContext.Current.Request.Headers["Accept-Language"].ToString());
-                client.DefaultRequestHeaders.Add("splitDb", splitDbCode);
-                client.DefaultRequestHeaders.Add("token", token);
-                try
-                {
-                    // 将请求头添加到 HttpClient
-                    if (headers != null)
-                    {
-                        foreach (var header in headers)
-                        {
-                            client.DefaultRequestHeaders.Add(header.Key, header.Value);
-                        }
-                    }
-                    // 发送 GET 请求
-
-                    var response = client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/json")).Result;
-                    //string resp = await httpResponseMessage.Content.ReadAsStringAsync();
-
-                    //var response = client.PostAsync(url,).Result;
-                    if (response.IsSuccessStatusCode)
-                    {
-                        // 读取响应内容
-                        var content = response.Content.ReadAsStringAsync().Result;
-                        res = ApiResult.Success();
-                        return content;
-                    }
-                    else
-                    {
-                        res = ApiResult.Error(response.StatusCode.ToString(), 13010001);
-                        return "";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogHelper.Error($"(13010001)访问[{url}]异常,[{ex.Message}]");
-                    res = ApiResult.Error(ex.Message);
-                    return "";
-                }
-            }
-            catch (Exception ex)
-            {
-                res = ApiResult.Error(ex.Message);
-                return "";
-            }
-
-
-            //    //对所有代码产生的垃圾资源进行强制回收-慎用
-            //    //System.GC.Collect();
-            //    //请求地址获取用户授权信息
-            //    WebRequest webRequest = System.Net.WebRequest.Create(url);
-            //    webRequest.Timeout = 1000 * 10;//设置请求超时时间10秒
-
-            //    System.Net.ServicePointManager.ServerCertificateValidationCallback =
-            //        ((sender, certificate, chain, sslPolicyErrors) => true);
-
-            //    HttpWebRequest httpRequest = webRequest as System.Net.HttpWebRequest;
-            //    httpRequest.Method = "post";
-            //    httpRequest.ContentType = "application/json";
-            //    httpRequest.KeepAlive = false;//设置不是常连接
-            //    httpRequest.Headers.Add("token", token);
-            //    httpRequest.Headers.Add("splitDb", splitDbCode);
-            //    httpRequest.Headers.Add("Accept-Language", HttpContext.Current.Request.Headers["Accept-Language"].First());
-
-            //    System.Text.Encoding encoding = System.Text.Encoding.UTF8;
-            //    byte[] bytesToPost = encoding.GetBytes(data);
-            //    httpRequest.ContentLength = bytesToPost.Length;
-            //    System.IO.Stream requestStream = httpRequest.GetRequestStream();
-            //    requestStream.Write(bytesToPost, 0, bytesToPost.Length);
-            //    requestStream.Close();
-
-            //    HttpWebResponse response = (HttpWebResponse)webRequest.GetResponse();
-
-            //    Stream stream = response.GetResponseStream();
-            //    StreamReader Reader = new StreamReader(stream, Encoding.UTF8);
-            //    returnStr = Reader.ReadToEnd();
-            //    if (!string.IsNullOrEmpty(returnStr))
-            //    {
-            //        returnStr = returnStr.Replace("\\", "");
-            //        returnStr = returnStr.TrimEnd('\"');
-            //        returnStr = returnStr.TrimStart('\"');
-            //    }
-
-            //    if (webRequest != null)
-            //    {
-            //        webRequest.Abort();
-            //    }
-            //    if (httpRequest != null)
-            //    {
-            //        httpRequest.Abort();
-            //    }
-            //    if (response != null)
-            //    {
-            //        response.Dispose();
-            //        response.Close();
-            //    }
-            //    if (stream != null)
-            //    {
-            //        stream.Dispose();
-            //        stream.Close();
-            //    }
-            //    if (Reader != null)
-            //    {
-            //        Reader.Dispose();
-            //        Reader.Close();
-            //    }
-            //    res.IsSuccess = true;
-            //    return returnStr;
-            //}
-            //catch (WebException ex)
-            //{
-            //    res = ApiResult.Error($"(13010001)访问[{url}]异常,[{ex.Message}]");
-            //    return "";
-            //}
-            //catch (Exception ex)
-            //{
-            //    LogHelper.Info($"{url}无法访问，请检查");
-            //    res = ApiResult.Error($"(13010001)访问[{url}]异常,[{ex.Message}]");
-            //    return "";
-            //}
+            string url = CombineUrl(ipPort, path);
+            return SendForApiResult(HttpMethod.Post, url, data, ref res, token, splitDbCode, headers);
         }
         #endregion
 
@@ -257,121 +245,8 @@ namespace HZ.CommonUtil.Helpers
         /// <returns></returns>
         public static string HttpGet(string url, ref ApiResult res, string token = "", string splitDbCode = "", Dictionary<string, string> headers = null)
         {
-            try
-            {
-                string webUrl = "";
-                if (url.StartsWith("http"))
-                    webUrl = url;
-                else
-                    webUrl = "http://" + url;
-
-                System.Net.ServicePointManager.ServerCertificateValidationCallback =
-                    ((sender, certificate, chain, sslPolicyErrors) => true);
-
-                using var client = new HttpClient();
-                // 添加 Token 到请求头
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Content-Type", "application/json");
-                if (HelperHttpContext.Current != null)
-                    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(HelperHttpContext.Current.Request.Headers["Accept-Language"].ToString());
-                client.DefaultRequestHeaders.Add("splitDb", splitDbCode);
-                client.DefaultRequestHeaders.Add("token", token);
-                try
-                {
-                    // 将请求头添加到 HttpClient
-                    if (headers != null)
-                    {
-                        foreach (var header in headers)
-                        {
-                            client.DefaultRequestHeaders.Add(header.Key, header.Value);
-                        }
-                    }
-                    // 发送 GET 请求
-                    var response = client.GetAsync(webUrl).Result;
-                    if (response.IsSuccessStatusCode)
-                    {
-                        // 读取响应内容
-                        var content = response.Content.ReadAsStringAsync().Result;
-                        res = ApiResult.Success();
-                        return content;
-                    }
-                    else
-                    {
-                        res = ApiResult.Error(response.StatusCode.ToString(), 13010001);
-                        return "";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogHelper.Error($"(13010001)访问[{webUrl}]异常,[{ex.Message}]");
-                    res = ApiResult.Error(ex.Message);
-                    return "";
-                }
-            }
-            catch (Exception ex)
-            {
-                res = ApiResult.Error(ex.Message);
-                return "";
-            }
-
-            //    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(ipPort);
-            //    request.Method = "GET";
-            //    request.ContentType = "application/json";
-            //    request.KeepAlive = false;//设置不是长连接
-            //    request.Headers.Add("token", token);
-            //    request.Headers.Add("splitDb", splitDbCode);
-            //    request.Headers.Add("Accept-Language", HttpContext.Current.Request.Headers["Accept-Language"].First());
-
-            //    if (headers != null)
-            //    {
-            //        foreach (var m in headers)
-            //            request.Headers.Add(m.Key, m.Value);
-            //    }
-            //    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            //    Stream myResponseStream = response.GetResponseStream();
-            //    StreamReader myStreamReader = new StreamReader(myResponseStream, Encoding.GetEncoding("utf-8"));
-            //    string retString = myStreamReader.ReadToEnd();
-            //    //if (!string.IsNullOrEmpty(retString))
-            //    //{
-            //    //    retString = retString.Replace("\\", "");
-            //    //    retString = retString.TrimEnd('\"');
-            //    //    retString = retString.TrimStart('\"');
-            //    //}
-            //    if (request != null)
-            //    {
-            //        request.Abort();
-            //    }
-            //    if (response != null)
-            //    {
-            //        response.Dispose();
-            //        response.Close();
-            //    }
-            //    if (myResponseStream != null)
-            //    {
-            //        myResponseStream.Dispose();
-            //        myResponseStream.Close();
-            //    }
-            //    if (myStreamReader != null)
-            //    {
-            //        myStreamReader.Dispose();
-            //        myStreamReader.Close();
-            //    }
-
-            //    myStreamReader.Close();
-            //    myResponseStream.Close();
-
-            //    res.IsSuccess = true;
-            //    return retString;
-            //}
-            //catch (WebException ex)
-            //{
-            //    res = ApiResult.Error($"(13010001)访问[{url}]异常,[{ex.Message}]");
-            //    return "";
-            //}
-            //catch (Exception ex)
-            //{
-            //    res = ApiResult.Error($"(13010001)访问[{url}]异常,[{ex.Message}]");
-            //    return "";
-            //}
+            string webUrl = NormalizeUrl(url);
+            return SendForApiResult(HttpMethod.Get, webUrl, null, ref res, token, splitDbCode, headers);
         }
 
         /// <summary>
@@ -388,128 +263,8 @@ namespace HZ.CommonUtil.Helpers
         /// <returns></returns>
         public static string HttpPost(string url, string data, ref ApiResult res, Dictionary<string, string> headers = null)
         {
-            try
-            {
-                if (!url.StartsWith("http"))
-                    url = "http://" + url;
-
-                using var client = new HttpClient();
-
-                if (HelperHttpContext.Current != null)
-                    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(HelperHttpContext.Current.Request.Headers["Accept-Language"].ToString());
-                try
-                {
-                    // 将请求头添加到 HttpClient
-                    if (headers != null)
-                    {
-                        foreach (var header in headers)
-                        {
-                            client.DefaultRequestHeaders.Add(header.Key, header.Value);
-                        }
-                    }
-                    var response = client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/json")).Result;
-                    if (response.IsSuccessStatusCode)
-                    {
-                        // 读取响应内容
-                        var content = response.Content.ReadAsStringAsync().Result;
-                        res = ApiResult.Success();
-                        return content;
-                    }
-                    else
-                    {
-                        res = ApiResult.Error(response.StatusCode.ToString(), 13010001);
-                        return "";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogHelper.Error($"(13010001)访问[{url}]异常,[{ex.Message}]");
-                    res = ApiResult.Error(ex.Message);
-                    return "";
-                }
-            }
-            catch (Exception ex)
-            {
-                res = ApiResult.Error(ex.Message);
-                return "";
-            }
-
-            //    string returnStr = "";
-            //    //对所有代码产生的垃圾资源进行强制回收-慎用
-            //    //System.GC.Collect();
-            //    //请求地址获取用户授权信息
-            //    WebRequest webRequest = System.Net.WebRequest.Create(url);
-            //    webRequest.Timeout = 100000000;//设置请求超时时间10秒
-
-            //    System.Net.ServicePointManager.ServerCertificateValidationCallback =
-            //        ((sender, certificate, chain, sslPolicyErrors) => true);
-            //    HttpWebRequest httpRequest = webRequest as System.Net.HttpWebRequest;
-            //    httpRequest.Method = "post";
-            //    httpRequest.ContentType = "application/json";
-            //    httpRequest.Headers.Add("Accept-Language", HttpContext.Current.Request.Headers["Accept-Language"].First());
-            //    httpRequest.KeepAlive = false;//设置不是常连接
-
-            //    if (headers != null)
-            //    {
-            //        foreach (var m in headers)
-            //            httpRequest.Headers.Add(m.Key, m.Value);
-            //    }
-
-            //    System.Text.Encoding encoding = System.Text.Encoding.UTF8;
-            //    byte[] bytesToPost = encoding.GetBytes(data);
-            //    httpRequest.ContentLength = bytesToPost.Length;
-            //    System.IO.Stream requestStream = httpRequest.GetRequestStream();
-            //    requestStream.Write(bytesToPost, 0, bytesToPost.Length);
-            //    requestStream.Close();
-
-            //    HttpWebResponse response = (HttpWebResponse)webRequest.GetResponse();
-
-            //    Stream stream = response.GetResponseStream();
-            //    StreamReader Reader = new StreamReader(stream, Encoding.UTF8);
-            //    returnStr = Reader.ReadToEnd();
-            //    if (!string.IsNullOrEmpty(returnStr))
-            //    {
-            //        returnStr = returnStr.Replace("\\", "");
-            //        returnStr = returnStr.TrimEnd('\"');
-            //        returnStr = returnStr.TrimStart('\"');
-            //    }
-
-            //    if (webRequest != null)
-            //    {
-            //        webRequest.Abort();
-            //    }
-            //    if (httpRequest != null)
-            //    {
-            //        httpRequest.Abort();
-            //    }
-            //    if (response != null)
-            //    {
-            //        response.Dispose();
-            //        response.Close();
-            //    }
-            //    if (stream != null)
-            //    {
-            //        stream.Dispose();
-            //        stream.Close();
-            //    }
-            //    if (Reader != null)
-            //    {
-            //        Reader.Dispose();
-            //        Reader.Close();
-            //    }
-            //    res.IsSuccess = true;
-            //    return returnStr;
-            //}
-            //catch (WebException ex)
-            //{
-            //    res = ApiResult.Error($"(13010001)访问[{url}]异常,[{ex.Message}]");
-            //    return "";
-            //}
-            //catch (Exception ex)
-            //{
-            //    res = ApiResult.Error($"(13010001)访问[{url}]异常,[{ex.Message}]");
-            //    return "";
-            //}
+            url = NormalizeUrl(url);
+            return SendForApiResult(HttpMethod.Post, url, data, ref res, "", "", headers);
         }
 
         /// <summary>
@@ -530,83 +285,19 @@ namespace HZ.CommonUtil.Helpers
         {
             try
             {
-                if (!url.StartsWith("http"))
-                    url = "http://" + url;
-                string returnStr = "";
-                //对所有代码产生的垃圾资源进行强制回收-慎用
-                //System.GC.Collect();
-                //请求地址获取用户授权信息
-                WebRequest webRequest = System.Net.WebRequest.Create(url);
-                webRequest.Timeout = 100000000;//设置请求超时时间10秒
+                url = NormalizeUrl(url);
+                Dictionary<string, string> requestHeaders = headers == null
+                    ? new Dictionary<string, string>()
+                    : new Dictionary<string, string>(headers);
 
-                System.Net.ServicePointManager.ServerCertificateValidationCallback =
-                    ((sender, certificate, chain, sslPolicyErrors) => true);
-                HttpWebRequest httpRequest = webRequest as System.Net.HttpWebRequest;
-                httpRequest.Method = "post";
-                httpRequest.ContentType = "application/json";
-                httpRequest.Headers.Add("Accept-Language", HelperHttpContext.Current.Request.Headers["Accept-Language"].First());
-                httpRequest.KeepAlive = false;//设置不是常连接
-
-                if (headers != null)
+                if (!string.IsNullOrWhiteSpace(userCode) || !string.IsNullOrWhiteSpace(userPwd))
                 {
-                    foreach (var m in headers)
-                        httpRequest.Headers.Add(m.Key, m.Value);
+                    string basicToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{userCode}:{userPwd}"));
+                    requestHeaders["Authorization"] = "Basic " + basicToken;
                 }
 
-                //（1）设置请求Credentials
-                //CredentialCache credentialCache = new CredentialCache();
-                //credentialCache.Add(new Uri(url), "Basic", new NetworkCredential(userCode, userPwd));
-                //httpRequest.Credentials = credentialCache;
-
-                ////（2）设置Headers Authorization
-                //httpRequest.Headers.Add("Authorization", "Basic" + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{userCode}:{userPwd}")));
-
-                httpRequest.Credentials = new NetworkCredential(userCode, userPwd);
-
-                System.Text.Encoding encoding = System.Text.Encoding.UTF8;
-                byte[] bytesToPost = encoding.GetBytes(data);
-                httpRequest.ContentLength = bytesToPost.Length;
-                System.IO.Stream requestStream = httpRequest.GetRequestStream();
-                requestStream.Write(bytesToPost, 0, bytesToPost.Length);
-                requestStream.Close();
-
-                HttpWebResponse response = (HttpWebResponse)webRequest.GetResponse();
-
-                Stream stream = response.GetResponseStream();
-                StreamReader Reader = new StreamReader(stream, Encoding.UTF8);
-                returnStr = Reader.ReadToEnd();
-                if (!string.IsNullOrEmpty(returnStr))
-                {
-                    returnStr = returnStr.Replace("\\", "");
-                    returnStr = returnStr.TrimEnd('\"');
-                    returnStr = returnStr.TrimStart('\"');
-                }
-
-                if (webRequest != null)
-                {
-                    webRequest.Abort();
-                }
-                if (httpRequest != null)
-                {
-                    httpRequest.Abort();
-                }
-                if (response != null)
-                {
-                    response.Dispose();
-                    response.Close();
-                }
-                if (stream != null)
-                {
-                    stream.Dispose();
-                    stream.Close();
-                }
-                if (Reader != null)
-                {
-                    Reader.Dispose();
-                    Reader.Close();
-                }
-                res.IsSuccess = true;
-                return returnStr;
+                string returnStr = SendForApiResult(HttpMethod.Post, url, data, ref res, "", "", requestHeaders);
+                return CleanResponseString(returnStr);
             }
             catch (WebException ex)
             {
@@ -629,52 +320,13 @@ namespace HZ.CommonUtil.Helpers
         /// <returns></returns>
         public static string HttpWechat_Get(string webUrl, string paramStr = "")
         {
-            string Data = webUrl + (paramStr == "" ? "" : "?") + paramStr;
-
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Data);
-            request.Method = "GET";
-            request.ContentType = "application/json";
-            request.KeepAlive = false;//设置不是常连接
-
-            string retString = "";
             try
             {
-                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                Stream myResponseStream = response.GetResponseStream();
-                StreamReader myStreamReader = new StreamReader(myResponseStream, Encoding.GetEncoding("utf-8"));
-                retString = myStreamReader.ReadToEnd();
-                if (!string.IsNullOrEmpty(retString))
-                {
-                    retString = retString.Replace("\\", "");
-                    retString = retString.TrimEnd('\"');
-                    retString = retString.TrimStart('\"');
-                }
-
-                myStreamReader.Close();
-
-                myResponseStream.Close();
-                if (request != null)
-                {
-                    request.Abort();
-                }
-                if (response != null)
-                {
-                    response.Dispose();
-                    response.Close();
-                }
-                if (myResponseStream != null)
-                {
-                    myResponseStream.Dispose();
-                    myResponseStream.Close();
-                }
-                if (myStreamReader != null)
-                {
-                    myStreamReader.Dispose();
-                    myStreamReader.Close();
-                }
-                return retString;
+                string dataUrl = AppendQueryString(NormalizeUrl(webUrl), paramStr);
+                WebApiResponse response = SendAsync(HttpMethod.Get, dataUrl).GetAwaiter().GetResult();
+                return response.IsSuccessStatusCode ? CleanResponseString(response.Content) : "";
             }
-            catch (Exception ex)
+            catch
             {
                 return "";
             }
@@ -690,67 +342,16 @@ namespace HZ.CommonUtil.Helpers
         /// <returns></returns>
         public static string HttpWechat_Post(string weburl, string data)
         {
-            string returnStr = "";
             try
             {
-                //对所有代码产生的垃圾资源进行强制回收-慎用
-                //System.GC.Collect();
-                //请求地址获取用户授权信息
-                WebRequest webRequest = System.Net.WebRequest.Create(weburl);
-                webRequest.Timeout = 1000000;//设置请求超时时间10秒
-
-                HttpWebRequest httpRequest = webRequest as System.Net.HttpWebRequest;
-                httpRequest.Method = "post";
-                httpRequest.ContentType = "application/json";
-                httpRequest.KeepAlive = false;//设置不是常连接
-
-                System.Text.Encoding encoding = System.Text.Encoding.UTF8;
-                byte[] bytesToPost = encoding.GetBytes(data);
-                httpRequest.ContentLength = bytesToPost.Length;
-                System.IO.Stream requestStream = httpRequest.GetRequestStream();
-                requestStream.Write(bytesToPost, 0, bytesToPost.Length);
-                requestStream.Close();
-
-                HttpWebResponse response = (HttpWebResponse)webRequest.GetResponse();
-                Stream stream = response.GetResponseStream();
-                StreamReader Reader = new StreamReader(stream, Encoding.UTF8);
-                returnStr = Reader.ReadToEnd();
-                if (!string.IsNullOrEmpty(returnStr))
-                {
-                    returnStr = returnStr.Replace("\\", "");
-                    returnStr = returnStr.TrimEnd('\"');
-                    returnStr = returnStr.TrimStart('\"');
-                }
-
-                if (webRequest != null)
-                {
-                    webRequest.Abort();
-                }
-                if (httpRequest != null)
-                {
-                    httpRequest.Abort();
-                }
-                if (response != null)
-                {
-                    response.Dispose();
-                    response.Close();
-                }
-                if (stream != null)
-                {
-                    stream.Dispose();
-                    stream.Close();
-                }
-                if (Reader != null)
-                {
-                    Reader.Dispose();
-                    Reader.Close();
-                }
+                weburl = NormalizeUrl(weburl);
+                WebApiResponse response = SendAsync(HttpMethod.Post, weburl, data).GetAwaiter().GetResult();
+                return response.IsSuccessStatusCode ? CleanResponseString(response.Content) : "";
             }
             catch
             {
-                returnStr = "";
+                return "";
             }
-            return returnStr;
         }
         #endregion
 
@@ -758,37 +359,11 @@ namespace HZ.CommonUtil.Helpers
         {
             try
             {
-                string ipPort = "";
-                if (url.StartsWith("http"))
-                    ipPort = url;
-                else
-                    ipPort = "http://" + url;
-
-                using var client = new HttpClient();
-                // 将对象转换为 JSON 字符串
-                //var json = JsonConvert.SerializeObject(data);
-                //var content = new StringContent("", Encoding.UTF8, "application/json");
-                if(HelperHttpContext.Current!=null)
-                    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(HelperHttpContext.Current.Request.Headers["Accept-Language"].ToString());
-                if (headers != null)
-                {
-                    foreach (var m in headers)
-                        client.DefaultRequestHeaders.Add(m.Key, m.Value);
-                }
-
-                // 发送 POST 请求
-                var response = await client.GetAsync(ipPort);
-
+                string ipPort = NormalizeUrl(url);
+                WebApiResponse response = await SendAsync(HttpMethod.Get, ipPort, null, "", "", headers).ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)
                 {
-                    // 读取响应内容
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine("Response content: " + responseContent);
-                    return responseContent;
-                }
-                else
-                {
-                    Console.WriteLine("Error: " + response.StatusCode);
+                    return response.Content;
                 }
                 return JsonConvert.SerializeObject(ApiResult.Error($"(13010001)访问[{url}]异常[{response.IsSuccessStatusCode}]", 13010001));
             }
@@ -802,37 +377,11 @@ namespace HZ.CommonUtil.Helpers
         {
             try
             {
-                string ipPort = "";
-                if (url.StartsWith("http"))
-                    ipPort = url;
-                else
-                    ipPort = "http://" + url;
-
-                using var client = new HttpClient();
-                // 将对象转换为 JSON 字符串
-                //var json = JsonConvert.SerializeObject(data);
-                if (HelperHttpContext.Current != null)
-                    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(HelperHttpContext.Current.Request.Headers["Accept-Language"].ToString());
-                var content = new StringContent(data, Encoding.UTF8, "application/json");
-                if (headers != null)
-                {
-                    foreach (var m in headers)
-                        client.DefaultRequestHeaders.Add(m.Key, m.Value);
-                }
-
-                // 发送 POST 请求
-                var response = await client.PutAsync(ipPort, content);
-
+                string ipPort = NormalizeUrl(url);
+                WebApiResponse response = await SendAsync(HttpMethod.Put, ipPort, data, "", "", headers).ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)
                 {
-                    // 读取响应内容
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine("Response content: " + responseContent);
-                    return responseContent;
-                }
-                else
-                {
-                    Console.WriteLine("Error: " + response.StatusCode);
+                    return response.Content;
                 }
                 return JsonConvert.SerializeObject(ApiResult.Error($"(13010001)访问[{url}]异常[{response.IsSuccessStatusCode}]"));
             }

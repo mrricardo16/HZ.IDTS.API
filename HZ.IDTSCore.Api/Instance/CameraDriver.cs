@@ -47,7 +47,7 @@ namespace HZ.IDTSCore.Api.Instance
             int virtualCameraNumber = int.Parse(virtualCameraNumberString);
             for (int i = 0; i < virtualCameraNumber; i++)
             {
-                WebSocketServer.SessionInstance.Instance.PLCSendAll(sendJSONString);
+                WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString);
                 Thread.Sleep(1000);
             }            
         }

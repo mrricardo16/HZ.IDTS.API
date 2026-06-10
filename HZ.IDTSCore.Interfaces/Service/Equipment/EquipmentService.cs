@@ -1123,7 +1123,7 @@ namespace HZ.IDTSCore.Interfaces.Service.Equipment
                 {
                     equibom.cn_t_equibom_lapsetime = DateTime.Now;
                     equibom.cn_s_equibom_status = "报废";
-                    LogHelper.Info(DateTime.Now.ToString() + "5.4设备（Equipment&&Equibom）档案管理复制接口读取Equibom失败，存在零部件状态不为正常或报废，详细信息为：" + JsonConvert.SerializeObject(child));
+                    //LogHelper.Info(DateTime.Now.ToString() + "5.4设备（Equipment&&Equibom）档案管理复制接口读取Equibom失败，存在零部件状态不为正常或报废，详细信息为：" + JsonConvert.SerializeObject(child));
                 }
                 equibom.cn_s_creator = user.UserCode;
                 equibom.cn_s_creator = user.UserName;

@@ -66,7 +66,7 @@ namespace HZ.IDTSCore.Api
                             result.ReturnMessage[0].Message = "第" + i++ + "遍发送完成！";
                         }
                         string sendJSONString = JsonConvert.SerializeObject(result);
-                        WebSocketServer.SessionInstance.Instance.PLCSendAll(sendJSONString);
+                        WebSocketServer.SessionInstance.Instance.PLCSendAllV2(sendJSONString);
 
                     }
                 }

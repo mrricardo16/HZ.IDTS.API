@@ -1,4 +1,4 @@
-ï»¿using HZ.CommonUtil.ExceptionExtend;
+using HZ.CommonUtil.ExceptionExtend;
 using HZ.CommonUtil.Helpers;
 using HZ.CommonUtil.Model;
 using HZ.DbHelper;
@@ -12,12 +12,46 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 
 namespace HZ.IDTSCore.Interfaces.Service
 {
     public class UserService : BaseService<SYS_USER>, IUserService
     {
+        private const int MaxLogTextLength = 200;
+
+        private static string TruncateForLog(string text)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= MaxLogTextLength)
+            {
+                return text;
+            }
+            return text.Substring(0, MaxLogTextLength) + "...";
+        }
+
+        /// <summary>
+        /// µÚÈı·½·µ»ØÈÕÖ¾Ö»¼ÇÂ¼×´Ì¬¡¢ºÄÊ±ºÍ³¤¶È£¬±ÜÃâ°ÑÍêÕû´ó JSON Ğ´Èë´ÅÅÌ¡£
+        /// </summary>
+        private static string BuildApiResultLogSummary(string title, string result, long elapsedMilliseconds)
+        {
+            int responseLength = result == null ? 0 : result.Length;
+            try
+            {
+                ApiResult apiResult = JsonConvert.DeserializeObject<ApiResult>(result);
+                if (apiResult == null)
+                {
+                    return title + "£ººÄÊ±=" + elapsedMilliseconds + "ms£¬ÏìÓ¦³¤¶È=" + responseLength + "£¬½âÎö½á¹ûÎª¿Õ";
+                }
+
+                string dataText = apiResult.Data == null ? "" : apiResult.Data.ToString();
+                return title + "£ººÄÊ±=" + elapsedMilliseconds + "ms£¬IsSuccess=" + apiResult.IsSuccess + "£¬StatusCode=" + apiResult.StatusCode + "£¬ErrCode=" + apiResult.ErrCode + "£¬Message=" + TruncateForLog(apiResult.Message) + "£¬DataLength=" + dataText.Length + "£¬ÏìÓ¦³¤¶È=" + responseLength;
+            }
+            catch (Exception ex)
+            {
+                return title + "£ººÄÊ±=" + elapsedMilliseconds + "ms£¬ÏìÓ¦³¤¶È=" + responseLength + "£¬ÏìÓ¦ÕªÒª=" + TruncateForLog(result) + "£¬½âÎöÒì³£=" + ex.Message;
+            }
+        }
         public UserService(SessionInfo session) : base(session) { }
 
         public AccountEntity Login(string username, string password)
@@ -85,12 +119,12 @@ namespace HZ.IDTSCore.Interfaces.Service
         }
 
         /// <summary>
-        /// æ·»åŠ ç”¨æˆ·
-        /// å’¸é˜³é¡¹ç›®
+        /// Ìí¼ÓÓÃ»§
+        /// ÏÌÑôÏîÄ¿
         /// </summary>
         /// <param name="userCode"></param>
         /// <param name="userName"></param>
-        /// <param name="phoneId">æ‰‹æœºID</param>
+        /// <param name="phoneId">ÊÖ»úID</param>
         /// <returns></returns>
         public ApiResult AddUser(string userCode, string userName, string phoneId)
         {
@@ -107,9 +141,9 @@ namespace HZ.IDTSCore.Interfaces.Service
         }
 
         /// <summary>
-        /// æ ¹æ®è§’è‰²ç¼–å·è·å–è§’è‰²ç”¨æˆ·
+        /// ¸ù¾İ½ÇÉ«±àºÅ»ñÈ¡½ÇÉ«ÓÃ»§
         /// </summary>
-        /// <param name="roleCode">è§’è‰²ç¼–å·</param>
+        /// <param name="roleCode">½ÇÉ«±àºÅ</param>
         /// <returns></returns>
         public List<RoleUser> GetRoleUser(string roleCode)
         {
@@ -133,7 +167,7 @@ namespace HZ.IDTSCore.Interfaces.Service
             AccountEntity account = _IUserService.Login("hz", "123456");
             if (account == null)
             {
-                throw new Exception("è¯·æ£€æŸ¥MDGç™»å½•æ¥å£ï¼");
+                throw new Exception("Çë¼ì²éMDGµÇÂ¼½Ó¿Ú£¡");
             }
             if (account.Code == "0")
             {
@@ -161,36 +195,36 @@ namespace HZ.IDTSCore.Interfaces.Service
             return "0";
         }
         /// <summary>
-        /// å¯åŠ¨æµç¨‹
+        /// Æô¶¯Á÷³Ì
         /// </summary>
-        /// <param name="opNo">å•å·</param>
-        /// <param name="stockCode">ä»“åº“å·</param>
-        /// <param name="opName">ä¸šåŠ¡ç±»å‹</param>
-        /// <param name="orderType">å•æ®å</param>
+        /// <param name="opNo">µ¥ºÅ</param>
+        /// <param name="stockCode">²Ö¿âºÅ</param>
+        /// <param name="opName">ÒµÎñÀàĞÍ</param>
+        /// <param name="orderType">µ¥¾İÃû</param>
         /// <returns></returns>
         public ApiResult StartFlow(string opNo, string stockCode, string opName, string orderType)
         {
-            string stockLevel = stockCode == "X" ? "æ”¯é˜Ÿ" : "å¤§é˜Ÿ";
+            string stockLevel = stockCode == "X" ? "Ö§¶Ó" : "´ó¶Ó";
             string endStr = "";
-            if (orderType == "å…¥åº“å•")
-                endStr = "å…¥åº“";
-            if (orderType == "å‡ºåº“å•")
+            if (orderType == "Èë¿âµ¥")
+                endStr = "Èë¿â";
+            if (orderType == "³ö¿âµ¥")
             {
                 if (stockCode == "X")
                 {
                     endStr = opName;
                 }
                 else
-                    endStr = "å‡ºåº“";
+                    endStr = "³ö¿â";
             }
-            if (orderType == "å‡ºåº“ç”³è¯·")
+            if (orderType == "³ö¿âÉêÇë")
             {
                 if (stockCode != "X")
                 {
                     endStr = opName;
                 }
                 else
-                    endStr = "ç”³è¯·";
+                    endStr = "ÉêÇë";
             }
 
             //IUniAppService _IUniAppService = ServiceLocator.GetService<IUniAppService>(GetCurrSession());
@@ -204,11 +238,14 @@ namespace HZ.IDTSCore.Interfaces.Service
             };
             UserSession user = GetSessionInfo();
             ApiResult res = new ApiResult();
-            LogHelper.Info(JsonConvert.SerializeObject(data));
-            string result = WebApiManager.HttpPost(mdg, "api/BillPublic/Submit", JsonConvert.SerializeObject(data),ref res, user.TokenId);
+            string requestJson = JsonConvert.SerializeObject(data);
+            LogHelper.Info("MDGÌá½»Á÷³ÌÇëÇó£ºopNo=" + opNo + "£¬routeInfo=" + data.routeInfo + "£¬opTitle=" + data.opTitle + "£¬ÇëÇó³¤¶È=" + requestJson.Length);
+            var stopwatch = Stopwatch.StartNew();
+            string result = WebApiManager.HttpPost(mdg, "api/BillPublic/Submit", requestJson,ref res, user.TokenId);
+            stopwatch.Stop();
             if (!res.IsSuccess)
                 return res;
-            LogHelper.Info(result);
+            LogHelper.Info(BuildApiResultLogSummary("MDGÌá½»Á÷³Ì·µ»Ø", result, stopwatch.ElapsedMilliseconds));
 
             res = JsonConvert.DeserializeObject<ApiResult>(result);
             if (res.IsSuccess)
@@ -219,7 +256,7 @@ namespace HZ.IDTSCore.Interfaces.Service
                     List<RoleUser> users = JsonConvert.DeserializeObject<List<RoleUser>>(resData.Value<object>("lstMessageUser").ToString());
                     users.ForEach(x =>
                     {
-                        //_IUniAppService.PushData(x.userCode, orderType+"å®¡æ ¸", $"{opNo}éœ€è¦å®¡æ ¸ï¼", orderType+"å®¡æ ¸");
+                        //_IUniAppService.PushData(x.userCode, orderType+"ÉóºË", $"{opNo}ĞèÒªÉóºË£¡", orderType+"ÉóºË");
                     });
                 }
                 catch (Exception ex)
@@ -240,11 +277,14 @@ namespace HZ.IDTSCore.Interfaces.Service
             };
             UserSession user = GetSessionInfo();
             ApiResult res = new ApiResult();
-            LogHelper.Info("è°ƒç”¨MDGæµç¨‹æ¥å£:" + JsonConvert.SerializeObject(data));
-            string result = WebApiManager.HttpPost(mdg, "api/BillPublic/Approved", JsonConvert.SerializeObject(data), ref res, user.TokenId);
+            string requestJson = JsonConvert.SerializeObject(data);
+            LogHelper.Info("µ÷ÓÃMDGÉóÅúÁ÷³Ì½Ó¿Ú£ºbillNo=" + opNo + "£¬ÇëÇó³¤¶È=" + requestJson.Length);
+            var stopwatch = Stopwatch.StartNew();
+            string result = WebApiManager.HttpPost(mdg, "api/BillPublic/Approved", requestJson, ref res, user.TokenId);
+            stopwatch.Stop();
             if (!res.IsSuccess)
                 return res;
-            LogHelper.Info("MDGæµç¨‹æ¥å£è¿”å›:" + result);
+            LogHelper.Info(BuildApiResultLogSummary("MDGÉóÅúÁ÷³Ì½Ó¿Ú·µ»Ø", result, stopwatch.ElapsedMilliseconds));
             res = JsonConvert.DeserializeObject<ApiResult>(result);
             if (res.IsSuccess)
             {
@@ -255,7 +295,7 @@ namespace HZ.IDTSCore.Interfaces.Service
                     List<RoleUser> users = JsonConvert.DeserializeObject<List<RoleUser>>(resData.Value<object>("lstMessageUser").ToString());
                     users.ForEach(x =>
                     {
-                        //_IUniAppService.PushData(x.userCode, $"{opType}å®¡æ ¸", $"{opType}å•{opNo}éœ€è¦å®¡æ ¸ï¼", context);
+                        //_IUniAppService.PushData(x.userCode, $"{opType}ÉóºË", $"{opType}µ¥{opNo}ĞèÒªÉóºË£¡", context);
                     });
                 }
                 catch (Exception ex)
@@ -278,9 +318,14 @@ namespace HZ.IDTSCore.Interfaces.Service
             UserSession user = GetSessionInfo();
 
             ApiResult res = new ApiResult();
-            string result = WebApiManager.HttpPost(mdg, "api/BillPublic/Reject", JsonConvert.SerializeObject(data),ref res, user.TokenId);
+            string requestJson = JsonConvert.SerializeObject(data);
+            LogHelper.Info("µ÷ÓÃMDG²µ»ØÁ÷³Ì½Ó¿Ú£ºbillNo=" + opNo + "£¬remarkLength=" + (remark == null ? 0 : remark.Length) + "£¬ÇëÇó³¤¶È=" + requestJson.Length);
+            var stopwatch = Stopwatch.StartNew();
+            string result = WebApiManager.HttpPost(mdg, "api/BillPublic/Reject", requestJson,ref res, user.TokenId);
+            stopwatch.Stop();
             if (!res.IsSuccess)
                 return res;
+            LogHelper.Info(BuildApiResultLogSummary("MDG²µ»ØÁ÷³Ì½Ó¿Ú·µ»Ø", result, stopwatch.ElapsedMilliseconds));
             res = JsonConvert.DeserializeObject<ApiResult>(result);
             if (res.IsSuccess)
             {
@@ -291,7 +336,7 @@ namespace HZ.IDTSCore.Interfaces.Service
                     List<RoleUser> users = JsonConvert.DeserializeObject<List<RoleUser>>(resData.Value<object>("lstMessageUser").ToString());
                     users.ForEach(x =>
                     {
-                        //_IUniAppService.PushData(x.userCode, "å…¥åº“å•å®¡æ ¸", $"å…¥åº“å•{opNo}éœ€è¦å®¡æ ¸ï¼", "å…¥åº“å•å®¡æ ¸");
+                        //_IUniAppService.PushData(x.userCode, "Èë¿âµ¥ÉóºË", $"Èë¿âµ¥{opNo}ĞèÒªÉóºË£¡", "Èë¿âµ¥ÉóºË");
                     });
                 }
                 catch (Exception ex)
@@ -312,11 +357,14 @@ namespace HZ.IDTSCore.Interfaces.Service
             UserSession user = GetSessionInfo();
 
             ApiResult res = new ApiResult();
-            string result = WebApiManager.HttpGet(mdg, "api/FlowMatter/GetBillSummary", ref res, "billType=&billNo=billState=å¾…åŠ", user.TokenId);
+            string queryString = "billType=&billNo=billState=´ı°ì";
+            var stopwatch = Stopwatch.StartNew();
+            string result = WebApiManager.HttpGet(mdg, "api/FlowMatter/GetBillSummary", ref res, queryString, user.TokenId);
+            stopwatch.Stop();
 
             if (!res.IsSuccess)
                 return res;
-            LogHelper.Info("billType=&billNo=billState=å¾…åŠ" + result);
+            LogHelper.Info(BuildApiResultLogSummary("MDG´ı°ì»ã×Ü½Ó¿Ú·µ»Ø£¬query=" + queryString, result, stopwatch.ElapsedMilliseconds));
             res = JsonConvert.DeserializeObject<ApiResult>(result);
             if (res.IsSuccess)
             {
@@ -338,11 +386,14 @@ namespace HZ.IDTSCore.Interfaces.Service
             UserSession user = GetSessionInfo();
 
             ApiResult res = new ApiResult();
-            string result = WebApiManager.HttpPost(mdg, "api/FlowMatter/GetPageList", JsonConvert.SerializeObject(parm), ref res, user.TokenId);
+            string requestJson = JsonConvert.SerializeObject(parm);
+            var stopwatch = Stopwatch.StartNew();
+            string result = WebApiManager.HttpPost(mdg, "api/FlowMatter/GetPageList", requestJson, ref res, user.TokenId);
+            stopwatch.Stop();
 
             if (!res.IsSuccess)
                 return res;
-            LogHelper.Info(JsonConvert.SerializeObject(parm)+":" + result);
+            LogHelper.Info(BuildApiResultLogSummary("MDGÁ÷³Ì·ÖÒ³½Ó¿Ú·µ»Ø£¬ÇëÇó³¤¶È=" + requestJson.Length, result, stopwatch.ElapsedMilliseconds));
             res = JsonConvert.DeserializeObject<ApiResult>(result);
             
             return res;

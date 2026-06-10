@@ -366,6 +366,10 @@ namespace HZ.IDTSCore.Model.Entity.OpenApi
             }
         }
         #endregion
+
+        #region 数量
+        public float qty { get; set; }
+        #endregion
     }
 
     /// <summary>

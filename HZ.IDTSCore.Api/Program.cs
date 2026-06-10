@@ -1,24 +1,25 @@
 using Autofac.Extensions.DependencyInjection;
+using HZ.CommonUtil.Helpers;
+using HZ.IDTSCore.Api.Instance;
+using HZ.IDTSCore.Model.Entity.SenarioTesting;
 using HZ.IDTSCore.WebSocketServer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using NLog;
 using NLog.Web;
 using SuperSocket.WebSocket.Server;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using HZ.IDTSCore.Model.Entity.SenarioTesting;
-using HZ.CommonUtil.Helpers;
 //1
 namespace HZ.IDTSCore.Api
 {
@@ -39,6 +40,9 @@ namespace HZ.IDTSCore.Api
                     token = "",
                     splitDbCode = ""
                 }).GetAll(); ;
+
+                SystemDriver.Instance.SysSetList = SysSetList;
+
                 string webSocketServer = SysSetList.Where(it => it.cn_s_setting_keycode == "WebSocketServer").Select(it => it.cn_s_setting_keyvalue).First();
                 string ipPort = webSocketServer.Substring(5);
                 string ip =  ipPort.Split(':')[0];

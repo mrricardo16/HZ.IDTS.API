@@ -70,11 +70,11 @@ namespace HZ.IDTSCore.Interfaces.Extensions
                         cn_s_data = data
                     };
                     //AutoCallService.GetInstance(new DbHelper.SessionInfo() { token = token}).Add(log);
-                    LogHelper.Info($"自动推送WCS结果：{JsonConvert.SerializeObject(log)}");
+                    //LogHelper.Info($"自动推送WCS结果：{JsonConvert.SerializeObject(log)}");
                     return new WcsResult { code = 0, msg = res.Message, desc = string.Empty };
                 default:
                     string result = WebApiManager.HttpPost(ip, path, data, ref res);
-                    LogHelper.Info($"直接调WCS结果：{result}");
+                    //LogHelper.Info($"直接调WCS结果：{result}");
                     if (res.IsSuccess)
                         return JsonConvert.DeserializeObject<WcsResult>(result);
                     return new WcsResult { code = 500, msg = res.Message, desc = string.Empty };

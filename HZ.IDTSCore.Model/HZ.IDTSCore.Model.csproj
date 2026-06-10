@@ -31,7 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MongoDB.Bson" Version="2.13.1" />
-    <PackageReference Include="sqlSugarCore" Version="5.0.9.1" />
+    <PackageReference Include="sqlSugarCore" Version="5.1.4.214" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HZ.CommonUtil\HZ.CommonUtil.csproj" />

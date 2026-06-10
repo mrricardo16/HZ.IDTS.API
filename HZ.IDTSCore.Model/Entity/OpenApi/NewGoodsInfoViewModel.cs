@@ -9,8 +9,8 @@ namespace HZ.IDTSCore.Model.Entity.OpenApi
     /// </summary>
     public class NewGoodsInfoViewModel
     {
-        public ItemRowViewModel ItemRow { get; set; }
+        public List<ItemRowViewModel> itemRow = new List<ItemRowViewModel>();
 
-        public RackInfoViewModel RackInfo { get; set; }
+        public RackInfoViewModel rackInfo = new RackInfoViewModel();
     }
 }
