@@ -133,7 +133,28 @@ namespace HZ.IDTSCore.Interfaces.Service.Sys
         public ReturnMessage ExecuteUpdatePackage(ExecuteUpdatePackage executeUpdatePackage)
         {
             ReturnMessage returnMessage = new ReturnMessage();
+            if (executeUpdatePackage == null || string.IsNullOrWhiteSpace(executeUpdatePackage.PackageDate))
+            {
+                returnMessage.IsSuccess = false;
+                returnMessage.Message = "更新包版本不能为空。";
+                return returnMessage;
+            }
+
             tn_dts_version itemNumber = Db.Queryable<tn_dts_version>().Where(it => it.cn_s_ver_packagedate == executeUpdatePackage.PackageDate).First();
+            if (itemNumber == null)
+            {
+                returnMessage.IsSuccess = false;
+                returnMessage.Message = $"更新包版本记录不存在，PackageDate={executeUpdatePackage.PackageDate}";
+                return returnMessage;
+            }
+
+            if (itemNumber.cn_s_ver_isupdated == executeUpdatePackage.IsUpdated)
+            {
+                returnMessage.IsSuccess = true;
+                returnMessage.Message = "更新包记录已是目标状态，无需重复更新。";
+                return returnMessage;
+            }
+
             itemNumber.cn_s_ver_isupdated = executeUpdatePackage.IsUpdated;
             itemNumber.cn_s_ver_update = executeUpdatePackage.UpdateTime;
             itemNumber.cn_s_ver_updateman = executeUpdatePackage.UpdateMan;
@@ -141,11 +162,11 @@ namespace HZ.IDTSCore.Interfaces.Service.Sys
             if (res <= 0)
             {
                 returnMessage.IsSuccess = false;
-                returnMessage.Message = "备份文件数据修改失败！";
+                returnMessage.Message = "更新包状态写入失败，数据库无影响行数。";
                 return returnMessage;
             }
             returnMessage.IsSuccess = true;
-            returnMessage.Message = "备份文件数据修改成功！";
+            returnMessage.Message = "更新包状态写入成功。";
             return returnMessage;
         }
         #endregion
