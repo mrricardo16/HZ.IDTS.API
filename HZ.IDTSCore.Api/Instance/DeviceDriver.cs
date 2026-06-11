@@ -50,6 +50,18 @@ namespace HZ.IDTSCore.Api.Instance
                 lock (_stateListLock)
                 {
                     _stateList = value;
+                    _stateMap.Clear();
+                    if (_stateList != null)
+                    {
+                        foreach (var device in _stateList)
+                        {
+                            if (device == null || string.IsNullOrEmpty(device.deviceCode) || _stateMap.ContainsKey(device.deviceCode))
+                            {
+                                continue;
+                            }
+                            _stateMap.Add(device.deviceCode, device);
+                        }
+                    }
                 }
             }
         }
@@ -58,6 +70,7 @@ namespace HZ.IDTSCore.Api.Instance
         /// 设备采集最新集合
         /// </summary>
         public GlobalRealCollectViewModel RealCollectList = new GlobalRealCollectViewModel();
+        private static readonly object _realCollectLock = new object();
 
         /// <summary>
         /// 设备爆炸图当前展示的设备信息
@@ -157,29 +170,33 @@ namespace HZ.IDTSCore.Api.Instance
                 {
                     if (!_stateMap.TryGetValue(deviceCode, out var device))
                     {
-                        device = new GlobalDevicesViewsModel()
+                        // 2026-06-10 优化：兼容旧逻辑已写入StateList但_stateMap尚未预热的场景。
+                        // 先复用StateList中的已有对象，避免同一deviceCode在_stateList中被重复添加。
+                        device = _stateList.FirstOrDefault(p => p.deviceCode == deviceCode);
+                        if (device == null)
                         {
-                            deviceCode = deviceCode,
-                            deviceName = deviceName,
-                            deviceType = deviceType,
-                            deviceState = deviceState,
-                            errCode = errCode,
-                            errMsg = errMsg,
-                            publishTimestamp = publishTimestamp
-                        };
+                            device = new GlobalDevicesViewsModel()
+                            {
+                                deviceCode = deviceCode,
+                                deviceName = deviceName,
+                                deviceType = deviceType,
+                                deviceState = deviceState,
+                                errCode = errCode,
+                                errMsg = errMsg,
+                                publishTimestamp = publishTimestamp
+                            };
 
-                        _stateList.Add(device);
+                            _stateList.Add(device);
+                        }
                         _stateMap.Add(deviceCode, device);
                     }
-                    else
-                    {
-                        device.deviceName = deviceName;
-                        device.deviceType = deviceType;
-                        device.deviceState = deviceState;
-                        device.errCode = errCode;
-                        device.errMsg = errMsg;
-                        device.publishTimestamp = publishTimestamp;
-                    }
+
+                    device.deviceName = deviceName;
+                    device.deviceType = deviceType;
+                    device.deviceState = deviceState;
+                    device.errCode = errCode;
+                    device.errMsg = errMsg;
+                    device.publishTimestamp = publishTimestamp;
                 }
 
                 return true;
@@ -193,10 +210,58 @@ namespace HZ.IDTSCore.Api.Instance
 
         public GlobalDevicesViewsModel GetDevice(string deviceCode)
         {
-            return this.StateList.FirstOrDefault(p => p.deviceCode == deviceCode);
+            if (string.IsNullOrEmpty(deviceCode))
+            {
+                return null;
+            }
+
+            lock (_stateListLock)
+            {
+                if (_stateMap.TryGetValue(deviceCode, out var device))
+                {
+                    return device;
+                }
+
+                device = _stateList.FirstOrDefault(p => p.deviceCode == deviceCode);
+                if (device != null)
+                {
+                    _stateMap[deviceCode] = device;
+                }
+                return device;
+            }
         }
 
 
+        /// <summary>
+        /// 获取设备状态快照。
+        /// 时间：2026-06-10
+        /// 优化内容：后台推送线程枚举StateList时，如果接口线程同时新增/更新设备，会触发Collection was modified异常；
+        /// 这里在锁内复制一份快照，调用方只枚举快照，不直接枚举共享List。
+        /// </summary>
+        public List<GlobalDevicesViewsModel> GetStateListSnapshotV2()
+        {
+            lock (_stateListLock)
+            {
+                return _stateList == null ? new List<GlobalDevicesViewsModel>() : _stateList.Where(p => p != null).ToList();
+            }
+        }
+
+        /// <summary>
+        /// 获取设备实时采集快照。
+        /// 时间：2026-06-10
+        /// 优化内容：避免WebSocket推送序列化RealCollectList时，接口线程同时刷新采集项导致集合枚举异常。
+        /// </summary>
+        public GlobalRealCollectViewModel GetRealCollectSnapshotV2()
+        {
+            lock (_realCollectLock)
+            {
+                GlobalRealCollectViewModel snapshot = new GlobalRealCollectViewModel();
+                snapshot.eqRealCollect = RealCollectList == null || RealCollectList.eqRealCollect == null
+                    ? new List<EQRealCollectModel>()
+                    : RealCollectList.eqRealCollect.Where(p => p != null).ToList();
+                return snapshot;
+            }
+        }
         /// <summary>
         /// 刷新内存设备采集数据
         /// </summary>
@@ -216,8 +281,11 @@ namespace HZ.IDTSCore.Api.Instance
                     return false;
                 }
 
-                foreach (var device in deviceModel.eqRealCollect)
+                // 2026-06-10 优化：实时采集内存统一加锁，避免推送线程序列化时集合被修改。
+                lock (_realCollectLock)
                 {
+                    foreach (var device in deviceModel.eqRealCollect)
+                    {
 
                     var memoryDevice = RealCollectList.eqRealCollect.FirstOrDefault(p => p.deviceNo == device.deviceNo);
                     if (memoryDevice == null)
@@ -275,6 +343,7 @@ namespace HZ.IDTSCore.Api.Instance
                         }
                         memoryDevice.collectItemCount = memoryDevice.collectItem.Count.ToString();
                     }
+                }
                 }
                 result = true;
             }

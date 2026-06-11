@@ -28,5 +28,12 @@ namespace HZ.IDTSCore.Interfaces.IService.Equipment
         /// <param name="listModel"></param>
         /// <returns></returns>
         public ApiResult BatchAdd(List<tn_dts_equireallogs> listModel);
+
+        /// <summary>
+        /// 批量新增或更新采集最新值V2。
+        /// </summary>
+        /// <param name="listModel"></param>
+        /// <returns></returns>
+        public ApiResult BatchUpsertLatestV2(List<tn_dts_equireallogs> listModel);
     }
 }

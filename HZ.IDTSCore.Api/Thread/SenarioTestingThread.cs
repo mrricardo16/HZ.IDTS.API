@@ -25,6 +25,11 @@ namespace HZ.IDTSCore.Api
         public bool IsExitLoop { get; set; } = true;
 
         /// <summary>
+        /// 场景测试线程开关。关闭时不创建线程，也不允许 WebSocket 指令启动循环。
+        /// </summary>
+        public bool IsEnabled { get; private set; } = false;
+
+        /// <summary>
         /// 脚本
         /// </summary>
         public StartTestingViewModel startJSON { get; set; } = new StartTestingViewModel();
@@ -43,8 +48,15 @@ namespace HZ.IDTSCore.Api
         /// <summary>
         /// 构造函数 单例模式 只执行一次
         /// </summary>
-        public void Initialize()
+        public void Initialize(bool isEnabled)
         {
+            IsEnabled = isEnabled;
+            IsExitLoop = true;
+            if (!IsEnabled)
+            {
+                return;
+            }
+
             _SendThread = new Thread(SendThreadHandle);
         }
 
@@ -70,7 +82,7 @@ namespace HZ.IDTSCore.Api
 
                     }
                 }
-                Thread.Sleep(10);
+                Thread.Sleep(1000);
             }
         }
 
@@ -80,9 +92,26 @@ namespace HZ.IDTSCore.Api
         /// </summary>
         public void Start()
         {
+            if (!IsEnabled)
+            {
+                IsExitLoop = true;
+                LogHelper.Info("SenarioTestingThread-Start ignored because EnableSenarioTesting=false");
+                return;
+            }
+
+            if (_SendThread == null || !_SendThread.IsAlive)
+            {
+                _SendThread = new Thread(SendThreadHandle);
+            }
+            else
+            {
+                IsExitLoop = false;
+                LogHelper.Info("SenarioTestingThread-Start-IsExitLoop=" + IsExitLoop);
+                return;
+            }
+
             IsExitLoop = false;
             LogHelper.Info("SenarioTestingThread-Start-IsExitLoop=" + IsExitLoop);
-            //_SendThread = new Thread(SendThreadHandle);
             _SendThread.Start();
         }
 
@@ -93,7 +122,10 @@ namespace HZ.IDTSCore.Api
         {
             IsExitLoop = true;
             LogHelper.Info("SenarioTestingThread-Start-IsExitLoop=" + IsExitLoop);
-            _SendThread.Abort();
+            if (_SendThread != null && _SendThread.IsAlive)
+            {
+                _SendThread.Abort();
+            }
         }
     }
 }

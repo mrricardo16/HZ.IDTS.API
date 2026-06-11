@@ -206,6 +206,22 @@ namespace HZ.IDTSCore.WebSocketServer
         }
 
         /// <summary>
+        /// 给指定Session发送消息。
+        /// 2026-06-10优化：统一场景测试回复、连接提示等点对点发送入口，避免绕过单Session发送锁。
+        /// </summary>
+        public async ValueTask SendForSessionV2(WebSocketSession session, string msg, string operationName = "SendForSessionV2")
+        {
+            try
+            {
+                await SendToSessionAsync(session, msg, operationName);
+            }
+            catch (Exception exception)
+            {
+                LogHelper.Info(operationName + "点对点发送异常，详细情况为：" + exception.Message);
+            }
+        }
+
+        /// <summary>
         /// 删除一个会话
         /// </summary>
         /// <param name="sessionID">会话ID</param>
@@ -283,7 +299,7 @@ namespace HZ.IDTSCore.WebSocketServer
         /// <summary>
         /// 同一个Session的发送串行化，避免多个接口同时向同一WebSocket连接并发SendAsync。
         /// </summary>
-        private async Task<bool> SendToSessionAsync(WebSession session, string msg, string operationName)
+        private async Task<bool> SendToSessionAsync(WebSocketSession session, string msg, string operationName)
         {
             if (session == null)
             {
@@ -345,7 +361,7 @@ namespace HZ.IDTSCore.WebSocketServer
             }
         }
 
-        private void RemoveSessionInternal(WebSession session)
+        private void RemoveSessionInternal(WebSocketSession session)
         {
             if (session == null)
             {
@@ -354,7 +370,18 @@ namespace HZ.IDTSCore.WebSocketServer
 
             lock (lockObject)
             {
-                WCSSessionList.Remove(session);
+                // 2026-06-10优化：兼容 WebSession 和基类 WebSocketSession，
+                // 所有点对点发送失败后都能按 SessionID 清理，避免失效连接残留。
+                var webSession = session as WebSession;
+                if (webSession != null)
+                {
+                    WCSSessionList.Remove(webSession);
+                }
+                else
+                {
+                    WCSSessionList.RemoveAll(p => p != null && p.SessionID == session.SessionID);
+                }
+
                 SessionSendLocks.TryRemove(session.SessionID, out _);
                 SlowSessionSendCounts.TryRemove(session.SessionID, out _);
                 LastSlowSessionElapsedMilliseconds.TryRemove(session.SessionID, out _);
@@ -364,7 +391,7 @@ namespace HZ.IDTSCore.WebSocketServer
         /// <summary>
         /// 记录单客户端连续慢发送。正常发送不写日志，避免高频推送被日志拖慢。
         /// </summary>
-        private static void RecordSessionSendResult(WebSession session, string operationName, string msg, long elapsedMilliseconds)
+        private static void RecordSessionSendResult(WebSocketSession session, string operationName, string msg, long elapsedMilliseconds)
         {
             if (session == null || string.IsNullOrEmpty(session.SessionID))
             {
@@ -419,7 +446,7 @@ namespace HZ.IDTSCore.WebSocketServer
             return remoteIpEndPoint.Address.ToString() == ip || remoteText == ip;
         }
 
-        private static string GetRemoteEndpointText(WebSession session)
+        private static string GetRemoteEndpointText(WebSocketSession session)
         {
             if (session == null || session.RemoteEndPoint == null)
             {

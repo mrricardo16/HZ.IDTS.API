@@ -408,6 +408,18 @@
             <param name="dbPassword"></param>
             <returns></returns>
         </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.IsRealCollectItemChangedV2(HZ.IDTSCore.Model.Entity.OpenApi.EQRealCollectModel,HZ.IDTSCore.Model.Entity.OpenApi.CollectItemModel)">
+            <summary>
+            判断采集项值是否发生变化。
+            时间：2026-06-11
+            优化内容：500ms高频上报时，只把发生变化的采集项写入SQL，未变化的采集项只刷新内存，不再重复打到数据库。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.IsRealCollectDeviceMetaChangedV2(HZ.IDTSCore.Model.Entity.OpenApi.EQRealCollectModel)">
+            <summary>
+            判断设备基础信息是否发生变化。基础信息变化时需要刷新Mongo整台设备最新值。
+            </summary>
+        </member>
         <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.BuildLocationStateLogSummary(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.OpenApi.LocationStateWMS},System.String)">
             <summary>
             大集合日志只记录统计信息和少量样例，避免高频接口把完整 JSON 写入磁盘。
@@ -416,6 +428,13 @@
         <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.BuildLocationRealMonitorLogSummary(HZ.IDTSCore.Model.Entity.OpenApi.LocationRealMonitorViewModel)">
             <summary>
             大集合日志只记录统计信息和少量样例，避免序列化完整 LocationRealMonitorViewModel。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.BuildMongoRealCollectBulkWritesV2(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.OpenApi.EQRealCollectModel})">
+            <summary>
+            构建Mongo设备最新值批量Upsert操作。
+            优化内容：把原来每台设备一次FindOneFilter加一次Add/Update，改为一次BulkWrite提交。
+            注意：每台设备的采集值不同，不能使用UpdateManay统一更新，否则会把多台设备写成同一份数据。
             </summary>
         </member>
         <member name="M:HZ.IDTSCore.Api.Controllers.OpenApi.DtsController.LocationRealMonitor(HZ.IDTSCore.Model.Entity.OpenApi.LocationRealMonitorViewModel)">
@@ -1664,12 +1683,60 @@
             <param name="publishTimestamp"></param>
             <returns></returns>
         </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DeviceDriver.GetStateListSnapshotV2">
+            <summary>
+            获取设备状态快照。
+            时间：2026-06-10
+            优化内容：后台推送线程枚举StateList时，如果接口线程同时新增/更新设备，会触发Collection was modified异常；
+            这里在锁内复制一份快照，调用方只枚举快照，不直接枚举共享List。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DeviceDriver.GetRealCollectSnapshotV2">
+            <summary>
+            获取设备实时采集快照。
+            时间：2026-06-10
+            优化内容：避免WebSocket推送序列化RealCollectList时，接口线程同时刷新采集项导致集合枚举异常。
+            </summary>
+        </member>
         <member name="M:HZ.IDTSCore.Api.Instance.DeviceDriver.PublishRealCollect(HZ.IDTSCore.Model.Entity.OpenApi.GlobalRealCollectViewModel)">
             <summary>
             刷新内存设备采集数据
             </summary>
             <param name="deviceModel"></param>
             <returns></returns>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DtsDriver.BuildAgvMongoRealCollectBulkWritesV2(System.Collections.Generic.List{HZ.IDTSCore.Model.Entity.OpenApi.EQRealCollectModel})">
+            <summary>
+            构建AGV实时采集Mongo最新值批量Upsert操作。
+            优化内容：AgvRealMonitor当前走DtsDriver独立调用链，不能复用DtsController里的私有优化方法；
+            这里单独为AGV链路构建BulkWrite数据，把原来每台AGV一次FindOneFilter加一次Add/Update，改为一次批量提交。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DtsDriver.IsAgvRealCollectItemChangedV2(HZ.IDTSCore.Model.Entity.OpenApi.EQRealCollectModel,HZ.IDTSCore.Model.Entity.OpenApi.CollectItemModel)">
+            <summary>
+            判断AGV采集项值是否变化。
+            时间：2026-06-11
+            优化内容：500ms高频上报时，不变采集项不再重复写SQL和Mongo，降低AGV链路数据库压力。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DtsDriver.IsAgvRealCollectDeviceMetaChangedV2(HZ.IDTSCore.Model.Entity.OpenApi.EQRealCollectModel)">
+            <summary>
+            判断AGV设备基础信息是否变化。基础信息变化时需要刷新Mongo整台设备最新值。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DtsDriver.ParseAgvErrorMessageV2(System.String,System.String@,System.String@)">
+            <summary>
+            解析AGV异常信息。
+            优化内容：原代码每台AGV直接Split两次并强制取[1]，当第三方偶发传空或不含#时会抛异常；
+            这里保持“编码#描述”的兼容格式，同时增加兜底，避免单台AGV异常数据导致整个接口失败。
+            </summary>
+        </member>
+        <member name="M:HZ.IDTSCore.Api.Instance.DtsDriver.SendAgvWebSocketAsync(System.String,System.Int32)">
+            <summary>
+            AGV WebSocket后台推送。
+            优化内容：AgvRealMonitor以高频上报时，WebSocket推送不能阻塞HTTP接口；
+            如果上一批还未发送完成，说明客户端或网络已经偏慢，本轮跳过推送，避免后台任务堆积。
+            </summary>
         </member>
         <member name="M:HZ.IDTSCore.Api.Instance.GoodscommandDriver.RefreshStockItemInformation(System.String)">
             <summary>
@@ -2142,6 +2209,11 @@
             停止状态
             </summary>
         </member>
+        <member name="P:HZ.IDTSCore.Api.SenarioTestingThread.IsEnabled">
+            <summary>
+            场景测试线程开关。关闭时不创建线程，也不允许 WebSocket 指令启动循环。
+            </summary>
+        </member>
         <member name="P:HZ.IDTSCore.Api.SenarioTestingThread.startJSON">
             <summary>
             脚本
@@ -2152,7 +2224,7 @@
             获取单实例
             </summary>
         </member>
-        <member name="M:HZ.IDTSCore.Api.SenarioTestingThread.Initialize">
+        <member name="M:HZ.IDTSCore.Api.SenarioTestingThread.Initialize(System.Boolean)">
             <summary>
             构造函数 单例模式 只执行一次
             </summary>

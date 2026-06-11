@@ -21,6 +21,7 @@
     <ProjectReference Include="..\HZ.CommonUtil\HZ.CommonUtil.csproj" />
     <ProjectReference Include="..\HZ.IDTSCore.Common\HZ.IDTSCore.Common.csproj" />
     <ProjectReference Include="..\HZ.IDTSCore.Model\HZ.IDTSCore.Model.csproj" />
+    <ProjectReference Include="..\HZ.iWCS.MData.Core\HZ.iWCS.MData.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,9 +47,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="HZ.iWCS.MData.Core">
-      <HintPath>..\LIB\HZ.iWCS.MData.Core.dll</HintPath>
-    </Reference>
     <Reference Include="HZ.Redis">
       <HintPath>..\LIB\HZ.Redis.dll</HintPath>
     </Reference>

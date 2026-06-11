@@ -86,6 +86,7 @@
     <ProjectReference Include="..\HZ.IDTSCore.Interfaces\HZ.IDTSCore.Interfaces.csproj" />
     <ProjectReference Include="..\HZ.IDTSCore.Model\HZ.IDTSCore.Model.csproj" />
     <ProjectReference Include="..\HZ.IDTSCore.WebSocketServer\HZ.IDTSCore.WebSocketServer.csproj" />
+    <ProjectReference Include="..\HZ.iWCS.MData.Core\HZ.iWCS.MData.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -104,9 +105,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="HZ.iWCS.MData.Core">
-      <HintPath>..\LIB\HZ.iWCS.MData.Core.dll</HintPath>
-    </Reference>
     <Reference Include="HZ.Redis">
       <HintPath>..\LIB\HZ.Redis.dll</HintPath>
     </Reference>

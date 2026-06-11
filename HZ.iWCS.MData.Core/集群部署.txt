@@ -1,0 +1,158 @@
+﻿一、主从复制（一个主服务、多个从服务）
+	1、安装主服务
+	   A:通过批处理文件的方式和Mongodb启动参数的形式
+		   mongod.exe --install --master --dbpath=d:\mongodb\data --logpath=d:\mongodb\log\log.log --service MongoDB --serviceName "MongoDB"  --port 27017
+		   pause
+  
+		   将上面的命令 以bat 批处理文件 保存在 mongodb\Bin 目录下，并修改dbpath和logpath路径，注意服务名，不要启动验证。
+	   B：通过配置文件启动
+		   install.bat内容如下
+		   mongod.exe --install --config d:\MongoDB\etc\mongodb.conf
+		   pause
+
+
+		  mongodb.conf 配置文件如下 
+			   bind_ip = 127.0.0.1
+			   port = 27017
+			   logpath = d:\mongodb\log\log.log
+			   dbpath = d:\mongodb\data
+			   replSet = replset1  #此项为副本集部署时使用
+
+	2、安装从服务
+		   mongod.exe --install   --slave --source 192.168.1.116:27017 --slavedelay 5 --dbpath=D:\mongos\slave1\data logpath=D:\mongos\slave1\log\log.log --service MongoDBSlave1  -serviceName "MongoDBSlave1"
+		 将上面的命令 以bat 批处理文件 保存在 mongodb\Bin 目录下，并修改dbpath和logpath路径，注意服务名，不要启动验证。
+		 其中 --source 192.168.1.116:27017为 主服务的IP和端口号 、 --slavedelay 5为5秒同步一次
+    3、启动主服务和从服务，主服务作为写入库、从服务作为读库，实现了主从备份
+
+
+	配置主从复制的注意点:
+	1、在数据库集群中要明确的知道谁是主服务器,主服务器只有一台.
+	2、从服务器要知道自己的数据源也就是对应的主服务是谁.
+	3、–master用来确定主服务器,–slave 和 –source 来控制从服务器
+	主从复制的其他设置项
+	–only 从节点指定复制某个数据库,默认是复制全部数据库 
+	–slavedelay 从节点设置主数据库同步数据的延迟(单位是秒) 
+	–fastsync 从节点以主数据库的节点快照为节点启动从数据库 
+	–autoresync 从节点如果不同步则从新同步数据库(即选择当通过热添加了一台从服务器之后，从服务器选择是否更新主服务器之间的数据) 
+	–oplogSize 主节点设置oplog的大小(主节点操作记录存储到local的oplog中)
+
+二,MongoDB的副本集:
+1、配置安装服务
+副本集有点类似主从复制，不过跟真正的主从复制还是有两点区别的。
+a、该集群没有特定的主数据库。
+b、如果哪个主数据库宕机了，集群中就会推选出一个从属数据库作为主数据库顶上，这就具备了自动故障恢复功能.
+
+例如：有A、B、C三个服务
+
+第一张图表明A是活跃的B和C是用于备份的
+第二张图当A出现了故障,这时候集群根据权重算法推选出B为活跃的数据库
+第三张图当A恢复后他自动又会变为备份数据库
+
+如上述的三台服务配置为 
+
+A： mongodb.conf 配置文件如下 
+			   bind_ip = 192.168.1.116
+			   port = 27017
+			   logpath = d:\mongodb\log\log.log
+			   dbpath = d:\mongodb\data
+			   replSet = replset1  #此项为副本集部署时使用
+
+B： mongodb.conf 配置文件如下 
+			   bind_ip = 192.168.1.82
+			   port = 27017
+			   logpath = d:\mongodb\log\log.log
+			   dbpath = d:\mongodb\data
+			   replSet = replset1  #此项为副本集部署时使用
+
+
+C：mongodb.conf 配置文件如下 
+			   bind_ip = 192.168.1.59
+			   port = 27017
+			   logpath = d:\mongodb\log\log.log
+			   dbpath = d:\mongodb\data
+			   replSet = replset1  #此项为副本集部署时使用
+
+如上可以看出,ABC三台服务器之间形成一个闭环。 按顺序启动A\B\C三台服务器。
+
+
+关闭主服务器，从服务器是否能顶替 
+此时你关掉活跃节点的服务。此时你会发现剩余的两台机器有一台变为活跃节点了。
+
+2.配置副本集的其他配置参数:
+
+节点和初始化高级参数
+
+standard 常规节点:参与投票有可能成为活跃节点
+passive 副本节点:参与投票,但是不能成为活跃节点
+arbiter 仲裁节点:只是参与投票不复制节点也不能成为活跃节点
+高级参数
+
+Priority 0到1000之间 ,0代表是副本节点 ,1到1000是常规节点
+arbiterOnly : true 仲裁节点
+
+添加副本集
+config={_id : 'dbset',members : [{_id : 1, host : '192.168.0.1:12345'},{_id : 2, host : '192.168.0.2:12345'},{_id : 3, host : '192.168.0.3:12345'}]}  
+rs.initiate(config); #初始化副本集 
+
+在主节点下添加副本集
+rs.add("ip:port");
+------------
+rs0:SECONDARY>use dbhh
+rs0:SECONDARY> db.getMongo().setSlaveOk();//设置读库
+rs0:SECONDARY> db.test.count()
+
+二、授权
+1.添加超级用户
+1.1进入admin库
+use admin;
+1.2添加用户
+db.addUser("userName","password")
+1.3授权 
+db.auth("userName","password")
+2为特定库添加用户
+2.1创建/进入特定库
+use dbName;
+2.1添加用户
+db.addUser("dbUserName","dbPassword")
+2.2授权
+db.auth("dbUserName","dbPassword")
+
+2.3 显示用户
+ show users
+
+三,分片
+
+分片技术，跟关系数据库的表分区类似，我们知道当数据量达到T级别的时候，我们的磁盘，内存就吃不消了，或者单个的mongoDB服务器已经不能满足大量的插入操作,针对这样的场景我们该如何应对。mongoDB提供的分片技术来应对这种瓶颈。 
+当然分片除了解决空间不足的问题之外，还极大的提升的查询速度。
+
+1、搭建分片
+
+A：分片数据库_01.conf:
+
+dbpath = ~/mongodata/01
+port = 8081
+bind_ip = 127.0.0.1
+
+B：分片数据库_02.conf:
+
+dbpath = ~/mongodata/02
+port = 8082
+bind_ip = 127.0.0.1
+
+C：配置服务器.conf:
+
+dbpath = ~/mongodata/00
+port = 2000
+bind_ip = 127.0.0.1
+
+D：路由服务器
+   mongos --port 1000 --configdb 127.0.0.1:2000
+
+启动上面所有的服务。
+
+mongo 127.0.0.1:1000 (此时就通过路由链接到了配置服务器)
+
+
+如上就是MongoDB中常见的集群搭建。对于分片是最常用的，实际中的分片不可以像我们配置的这么简单,为了保险期间，实际中分片之间配置为副本集，配置服务器也不会是单单一台也常见的是一个副本集的集群。只有这样，才能让系统更加健壮。
+
+也就是说A、B、C、D服务 均配置搭建为 副本集 标配每个为三台电脑  一共为12台电脑 搭建一套完整的 MongoDB 集群

@@ -45,7 +45,90 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
         private static readonly System.Threading.SemaphoreSlim _conveyorWebSocketSendLock = new System.Threading.SemaphoreSlim(1, 1);
         private const int ConveyorSlowLogMilliseconds = 1000;
         private const int LargeJsonLogSampleCount = 3;
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> RealCollectItemValueCacheV2 = new System.Collections.Concurrent.ConcurrentDictionary<string, string>();
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> RealCollectDeviceMetaCacheV2 = new System.Collections.Concurrent.ConcurrentDictionary<string, string>();
 
+        #region 采集项变更过滤V2 - 2026-06-11
+        /// <summary>
+        /// 判断采集项值是否发生变化。
+        /// 时间：2026-06-11
+        /// 优化内容：500ms高频上报时，只把发生变化的采集项写入SQL，未变化的采集项只刷新内存，不再重复打到数据库。
+        /// </summary>
+        private static bool IsRealCollectItemChangedV2(EQRealCollectModel device, CollectItemModel item)
+        {
+            if (device == null || item == null || string.IsNullOrWhiteSpace(device.deviceNo))
+            {
+                return true;
+            }
+
+            string keyV2 = BuildRealCollectItemCacheKeyV2(device, item);
+            string newSignatureV2 = BuildRealCollectItemValueSignatureV2(item);
+            bool changedV2 = false;
+            RealCollectItemValueCacheV2.AddOrUpdate(keyV2,
+                key =>
+                {
+                    changedV2 = true;
+                    return newSignatureV2;
+                },
+                (key, oldSignature) =>
+                {
+                    if (oldSignature == newSignatureV2)
+                    {
+                        return oldSignature;
+                    }
+
+                    changedV2 = true;
+                    return newSignatureV2;
+                });
+            return changedV2;
+        }
+
+        /// <summary>
+        /// 判断设备基础信息是否发生变化。基础信息变化时需要刷新Mongo整台设备最新值。
+        /// </summary>
+        private static bool IsRealCollectDeviceMetaChangedV2(EQRealCollectModel device)
+        {
+            if (device == null || string.IsNullOrWhiteSpace(device.deviceNo))
+            {
+                return true;
+            }
+
+            string newSignatureV2 = (device.deviceName ?? string.Empty) + "\u001f"
+                + (device.deviceType ?? string.Empty) + "\u001f"
+                + (device.onlineStatus ?? string.Empty) + "\u001f"
+                + (device.collectItemCount ?? string.Empty);
+            bool changedV2 = false;
+            RealCollectDeviceMetaCacheV2.AddOrUpdate(device.deviceNo,
+                key =>
+                {
+                    changedV2 = true;
+                    return newSignatureV2;
+                },
+                (key, oldSignature) =>
+                {
+                    if (oldSignature == newSignatureV2)
+                    {
+                        return oldSignature;
+                    }
+
+                    changedV2 = true;
+                    return newSignatureV2;
+                });
+            return changedV2;
+        }
+
+        private static string BuildRealCollectItemCacheKeyV2(EQRealCollectModel device, CollectItemModel item)
+        {
+            return (device.deviceNo ?? string.Empty) + "\u001f"
+                + (item.collectItemName ?? string.Empty) + "\u001f"
+                + (item.collectObjectName ?? string.Empty);
+        }
+
+        private static string BuildRealCollectItemValueSignatureV2(CollectItemModel item)
+        {
+            return (item.collectObjectVal ?? string.Empty) + "\u001f" + (item.collectObjectUnit ?? string.Empty);
+        }
+        #endregion
         /// <summary>
         /// 大集合日志只记录统计信息和少量样例，避免高频接口把完整 JSON 写入磁盘。
         /// </summary>
@@ -71,6 +154,52 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
             return "LocationRealMonitorViewModel摘要：货位数=" + stockCount + "，料架数=" + rackCount + "，料箱数=" + boxCount + "，样例=" + sampleCodes;
         }
 
+        #region Mongo最新值批量Upsert构建 - 2026-06-10
+        /// <summary>
+        /// 构建Mongo设备最新值批量Upsert操作。
+        /// 优化内容：把原来每台设备一次FindOneFilter加一次Add/Update，改为一次BulkWrite提交。
+        /// 注意：每台设备的采集值不同，不能使用UpdateManay统一更新，否则会把多台设备写成同一份数据。
+        /// </summary>
+        private static List<WriteModel<MongoRealCollect>> BuildMongoRealCollectBulkWritesV2(List<EQRealCollectModel> devices)
+        {
+            List<WriteModel<MongoRealCollect>> writeModels = new List<WriteModel<MongoRealCollect>>();
+            if (devices == null || devices.Count == 0)
+            {
+                return writeModels;
+            }
+
+            // 同一批数据里如果出现重复deviceNo，以最后一条为准，避免同一设备在一个BulkWrite中重复写入。
+            Dictionary<string, EQRealCollectModel> latestDeviceMap = new Dictionary<string, EQRealCollectModel>();
+            foreach (var device in devices)
+            {
+                if (device == null || string.IsNullOrWhiteSpace(device.deviceNo))
+                {
+                    continue;
+                }
+                latestDeviceMap[device.deviceNo] = device;
+            }
+
+            foreach (var device in latestDeviceMap.Values)
+            {
+                var filter = Builders<MongoRealCollect>.Filter.Eq(o => o.deviceNo, device.deviceNo);
+                var update = Builders<MongoRealCollect>.Update
+                    .Set(o => o.deviceNo, device.deviceNo)
+                    .Set(o => o.deviceName, device.deviceName)
+                    .Set(o => o.deviceType, device.deviceType)
+                    .Set(o => o.onlineStatus, device.onlineStatus)
+                    .Set(o => o.collectItemCount, device.collectItemCount)
+                    .Set(o => o.collectItem, device.collectItem);
+
+                writeModels.Add(new UpdateOneModel<MongoRealCollect>(filter, update)
+                {
+                    // 不存在则插入，存在则更新，替代原来的FindOneFilter + Add/Update两次Mongo往返。
+                    IsUpsert = true
+                });
+            }
+
+            return writeModels;
+        }
+        #endregion
         public DtsController()
         {
             _IDtsService = ServiceLocator.GetService<IDtsService>(HttpContextSession());
@@ -447,7 +576,7 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                         }
 
                         //刷新内存设备状态
-                        DeviceDriver.Instance.PublishDevices(device.carCode, device.carName, "AGV", device.onlineState, errCode, errMsg, DateTime.Now);
+                        DeviceDriver.Instance.PublishDevicesV2(device.carCode, device.carName, "AGV", device.onlineState, errCode, errMsg, DateTime.Now);
 
 
                         #region 增加到设备采集信息
@@ -558,7 +687,7 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                             });
                         }
 
-                        DeviceDriver.Instance.PublishDevices(device.deviceName, device.deviceName, "Charger", device.onlineState, errCode, errMsg, DateTime.Now);
+                        DeviceDriver.Instance.PublishDevicesV2(device.deviceName, device.deviceName, "Charger", device.onlineState, errCode, errMsg, DateTime.Now);
                     }
 
                     if (alarmLogs.Count > 0)
@@ -734,14 +863,25 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                 #endregion
 
                 #region 初始化待写入数据集合
-                List<tn_dts_equireallogs> logs = new List<tn_dts_equireallogs>();
-                List<tn_dts_equialarmlogs> alarmLogs = new List<tn_dts_equialarmlogs>();
-                List<MongoEquialarmlogs> mogoAlarmLogs = new List<MongoEquialarmlogs>();
+                int reportedCollectItemCountV2 = 0;
+                int unchangedCollectItemCountV2 = 0;
+                int changedDeviceCountV2 = 0;
+
+                // 2026-06-11优化：先按上报采集项总量预分配容量，减少List扩容；真正写SQL的只有变更项。
+                int logCapacityV2 = 0;
+                foreach (var device in model.eqRealCollect)
+                {
+                    logCapacityV2 += device?.collectItem?.Count ?? 0;
+                }
+
+                List<tn_dts_equireallogs> logs = new List<tn_dts_equireallogs>(logCapacityV2);
+                List<EQRealCollectModel> changedMongoDevicesV2 = new List<EQRealCollectModel>();
                 #endregion
 
-                #region 构建设备采集日志并刷新Mongo最新值
-                long buildLogsMilliseconds = 0;
+                #region 构建设备采集变更日志
+                long beforeBuildLogsMilliseconds = stopwatch.ElapsedMilliseconds;
                 long mongoMilliseconds = 0;
+                DateTime fallbackCollectTimeV2 = DateTime.Now;
                 foreach (var device in model.eqRealCollect)
                 {
                     if (device == null)
@@ -749,21 +889,32 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                         continue;
                     }
 
-                    long beforeSingleBuildLogsMilliseconds = stopwatch.ElapsedMilliseconds;
-                    if (device.collectItem != null && device.collectItem.Count > 0)
+                    var collectItemsV2 = device.collectItem;
+                    bool deviceMetaChangedV2 = IsRealCollectDeviceMetaChangedV2(device);
+                    bool deviceHasChangedItemV2 = false;
+                    if (collectItemsV2 != null && collectItemsV2.Count > 0)
                     {
-                        foreach (var item in device.collectItem)
+                        foreach (var item in collectItemsV2)
                         {
                             if (item == null)
                             {
                                 continue;
                             }
 
+                            reportedCollectItemCountV2++;
+                            if (!IsRealCollectItemChangedV2(device, item))
+                            {
+                                // 2026-06-11优化：采集值和单位都未变化时，不再写SQL最新值，也不触发Mongo整台设备更新。
+                                unchangedCollectItemCountV2++;
+                                continue;
+                            }
+
+                            deviceHasChangedItemV2 = true;
                             DateTime collectTime;
                             if (!DateTime.TryParse(item.collectTime, out collectTime))
                             {
-                                // 采集时间格式异常时使用当前时间兜底，避免单条异常数据导致整个接口失败。
-                                collectTime = DateTime.Now;
+                                // 采集时间格式异常时使用本批兜底时间，避免单条异常数据导致整个接口失败。
+                                collectTime = fallbackCollectTimeV2;
                             }
 
                             logs.Add(new tn_dts_equireallogs()
@@ -777,58 +928,42 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                                 cn_s_equireallogs_objectval = item.collectObjectVal,
                                 cn_s_equireallogs_objectvalunit = item.collectObjectUnit
                             });
-
-                            // V1这里的状态报警判断使用cacheDevice.errCode和自身比较，实际不会产生报警。
-                            // V2暂不改变报警口径，避免高频接口上线后产生额外报警数据。
                         }
                     }
-                    buildLogsMilliseconds += stopwatch.ElapsedMilliseconds - beforeSingleBuildLogsMilliseconds;
 
-                    long beforeSingleMongoMilliseconds = stopwatch.ElapsedMilliseconds;
-                    // MongoDB存储最新值目前仍使用逐设备查询和更新。
-                    // 每台设备的collectItem不同，不能直接使用UpdateManay统一更新，否则会把多台设备更新成同一份数据。
-                    var eqWhere = Builders<MongoRealCollect>.Filter.Eq(o => o.deviceNo, device.deviceNo);
-                    MongoRealCollect mogoRealCollect = MongoDBSingleton.Instance.FindOneFilter(eqWhere);
-                    if (mogoRealCollect == null)
+                    if (deviceMetaChangedV2 || deviceHasChangedItemV2)
                     {
-                        mogoRealCollect = new MongoRealCollect();
-                        mogoRealCollect.deviceNo = device.deviceNo;
-                        mogoRealCollect.deviceName = device.deviceName;
-                        mogoRealCollect.deviceType = device.deviceType;
-                        mogoRealCollect.onlineStatus = device.onlineStatus;
-                        mogoRealCollect.collectItemCount = device.collectItemCount;
-                        mogoRealCollect.collectItem = device.collectItem;
-                        MongoDBSingleton.Instance.Add(mogoRealCollect);
+                        // Mongo存的是整台设备最新值：只要设备基础信息或任一采集项变化，就用完整device刷新Mongo。
+                        changedMongoDevicesV2.Add(device);
+                        changedDeviceCountV2++;
                     }
-                    else
-                    {
-                        mogoRealCollect.deviceNo = device.deviceNo;
-                        mogoRealCollect.deviceName = device.deviceName;
-                        mogoRealCollect.deviceType = device.deviceType;
-                        mogoRealCollect.onlineStatus = device.onlineStatus;
-                        mogoRealCollect.collectItemCount = device.collectItemCount;
-                        mogoRealCollect.collectItem = device.collectItem;
-                        MongoDBSingleton.Instance.Update(mogoRealCollect, mogoRealCollect._id.ToString());
-                    }
-                    mongoMilliseconds += stopwatch.ElapsedMilliseconds - beforeSingleMongoMilliseconds;
                 }
+                long buildLogsMilliseconds = stopwatch.ElapsedMilliseconds - beforeBuildLogsMilliseconds;
                 #endregion
 
-                #region 批量写入采集日志和报警日志
+                #region Mongo最新值按变更设备批量Upsert
+                long beforeMongoMilliseconds = stopwatch.ElapsedMilliseconds;
+                List<WriteModel<MongoRealCollect>> mongoRealCollectWrites = BuildMongoRealCollectBulkWritesV2(changedMongoDevicesV2);
+                if (mongoRealCollectWrites.Count > 0)
+                {
+                    // 2026-06-11优化：未变化的设备不再重复写Mongo；发生变化的设备仍写完整采集项，避免Mongo最新值丢字段。
+                    MongoDBSingleton.Instance.BulkWriteV2<MongoRealCollect>(mongoRealCollectWrites, isOrdered: false);
+                }
+                mongoMilliseconds = stopwatch.ElapsedMilliseconds - beforeMongoMilliseconds;
+                #endregion
+
+                #region 同步批量Upsert采集最新值和报警日志
                 long beforeSqlMilliseconds = stopwatch.ElapsedMilliseconds;
                 if (logs.Count > 0)
                 {
-                    _RealLogsService.BatchAdd(logs);
-                }
-
-                if (alarmLogs.Count > 0)
-                {
-                    _AlarmLogsService.BatchAdd(alarmLogs);
-                }
-
-                if (mogoAlarmLogs.Count > 0)
-                {
-                    MongoDBSingleton.Instance.InsertMany<MongoEquialarmlogs>(mogoAlarmLogs);
+                    // 2026-06-11优化：取消队列异步写库，改为当前请求同步批量Upsert最新采集值。
+                    // 目的：tn_dts_equireallogs只保留每个“设备编号+采集事项+采集对象”的最新值，避免队列积压和历史表无限增长。
+                    // 注意：这是一次批量UPDATE+INSERT，不再逐条循环更新数据库。
+                    ApiResult realLogsResultV2 = _RealLogsService.BatchUpsertLatestV2(logs);
+                    if (realLogsResultV2 == null || !realLogsResultV2.IsSuccess)
+                    {
+                        throw new Exception("SQL采集最新值Upsert失败：" + (realLogsResultV2 == null ? "" : realLogsResultV2.Message));
+                    }
                 }
                 long sqlMilliseconds = stopwatch.ElapsedMilliseconds - beforeSqlMilliseconds;
                 #endregion
@@ -845,11 +980,14 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                 {
                     LogHelper.Info("DeviceRealCollect接口总耗时：" + stopwatch.ElapsedMilliseconds
                         + "ms，设备数量：" + model.eqRealCollect.Count
-                        + "，采集日志数量：" + logs.Count
+                        + "，上报采集项数量：" + reportedCollectItemCountV2
+                        + "，变更采集项数量：" + logs.Count
+                        + "，未变更采集项数量：" + unchangedCollectItemCountV2
+                        + "，Mongo变更设备数量：" + changedDeviceCountV2
                         + "，内存刷新耗时：" + publishMilliseconds
                         + "ms，日志构建耗时：" + buildLogsMilliseconds
                         + "ms，Mongo最新值耗时：" + mongoMilliseconds
-                        + "ms，SQL日志写入耗时：" + sqlMilliseconds + "ms");
+                        + "ms，SQL最新值Upsert/报警写入耗时：" + sqlMilliseconds + "ms");
                 }
                 #endregion
             }
@@ -1549,7 +1687,7 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                             });
                         }
 
-                        DeviceDriver.Instance.PublishDevices(stacker.Code, stacker.Name, "堆垛机", stacker.State, errCode, errMsg, DateTime.Now);
+                        DeviceDriver.Instance.PublishDevicesV2(stacker.Code, stacker.Name, "堆垛机", stacker.State, errCode, errMsg, DateTime.Now);
 
                         EQRealCollectModel _EQRealCollectModel = new EQRealCollectModel();
                         _EQRealCollectModel.deviceNo = stacker.Code;
@@ -1826,7 +1964,7 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                     DeviceRealCollectViewModel _deviceRealCollect = new DeviceRealCollectViewModel();
                     foreach (var conveyor in model.Conveyor)
                     {
-                        var cacheDevice = DeviceDriver.Instance.StateList.FirstOrDefault(it => it.deviceCode == conveyor.Code);
+                        var cacheDevice = DeviceDriver.Instance.GetDevice(conveyor.Code);
                         string errCode = conveyor.ErrCode;
                         string errMsg = conveyor.ErrMsg;
                         if (cacheDevice != null && cacheDevice.errCode != errCode)
@@ -1981,7 +2119,7 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                     string collectTime = now.ToString();
                     var firstGoods = conveyor.GoodsList != null && conveyor.GoodsList.Count >= 1 ? conveyor.GoodsList[0] : null;
 
-                    var cacheDevice = DeviceDriver.Instance.StateList.FirstOrDefault(it => it.deviceCode == conveyor.Code);
+                    var cacheDevice = DeviceDriver.Instance.GetDevice(conveyor.Code);
                     string errCode = conveyor.ErrCode;
                     string errMsg = conveyor.ErrMsg;
                     if (cacheDevice != null && cacheDevice.errCode != errCode)
@@ -2008,7 +2146,7 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                         });
                     }
 
-                    DeviceDriver.Instance.PublishDevices(conveyor.Code, "输送线", "输送线", conveyor.State, errCode, errMsg, now);
+                    DeviceDriver.Instance.PublishDevicesV2(conveyor.Code, "输送线", "输送线", conveyor.State, errCode, errMsg, now);
 
                     EQRealCollectModel _EQRealCollectModel = new EQRealCollectModel();
                     _EQRealCollectModel.deviceNo = conveyor.Code;
@@ -2050,7 +2188,7 @@ namespace HZ.IDTSCore.Api.Controllers.OpenApi
                     long beforeDeviceRealCollectMilliseconds = stopwatch.ElapsedMilliseconds;
                     DeviceRealCollect(_deviceRealCollect);
 
-                    // DeviceRealCollect内部包含Mongo最新值和历史采集日志写入，是偶发超时的重点观察点。
+                    // DeviceRealCollect内部保留Mongo最新值同步写入；SQL采集日志已改为同步批量Upsert最新值，避免队列积压和历史表持续膨胀。
                     long deviceRealCollectMilliseconds = stopwatch.ElapsedMilliseconds - beforeDeviceRealCollectMilliseconds;
                     if (deviceRealCollectMilliseconds >= ConveyorSlowLogMilliseconds)
                     {

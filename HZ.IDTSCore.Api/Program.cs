@@ -32,8 +32,9 @@ namespace HZ.IDTSCore.Api
             logger.Debug("MainDebugger-0");
             try
             {
-                SenarioTestingThread.Instance.Initialize();
-                SenarioTestingThread.Instance.IsExitLoop = true;
+                // EnableSenarioTesting=false 时不初始化场景测试线程，避免 WebSocket 客户端连接后触发高频测试数据推送。
+                bool enableSenarioTesting = AppSettings.GetValue<bool>("AppSettings:Thread:EnableSenarioTesting");
+                SenarioTestingThread.Instance.Initialize(enableSenarioTesting);
 
                 List<Model.Entity.Sys.tn_dts_setting> SysSetList = new Interfaces.Service.Sys.SettingService(new DbHelper.SessionInfo()
                 {
@@ -62,7 +63,10 @@ namespace HZ.IDTSCore.Api
                   }
                  
               }).UseSession<WebSession>()
-              .UsePerMessageCompression()
+              // 2026-06-10优化：持续高频推送时，permessage-deflate 压缩可能与部分客户端解压实现不兼容，
+              // 客户端会出现 invalid block type / invalid stored block lengths 后主动断开连接。
+              // 这里默认关闭 WebSocket 压缩，优先保证长连接稳定；如客户端确认完全兼容后再开启。
+              //.UsePerMessageCompression()
               .ConfigureLogging((hostCtx, loggingBuilder) =>
               {
                   // register your logging library here

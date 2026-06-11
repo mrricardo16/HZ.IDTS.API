@@ -9,6 +9,7 @@ using HZ.IDTSCore.Api.Middleware;
 using HZ.IDTSCore.Common.Const;
 using HZ.IDTSCore.Common.Helpers;
 using HZ.IDTSCore.Interfaces;
+using HZ.IDTSCore.Model.Entity.MongoDB;
 using HZ.IDTSCore.Model.Entity.SenarioTesting;
 using HZ.IDTSCore.Model.Entity.Sys;
 using HZ.iWCS.MData.Core;
@@ -239,6 +240,18 @@ namespace HZ.IDTSCore.Api
                 )
             {
                 MongoDBSingleton.Instance.InitMongoDB(ipAddress, Convert.ToInt32(port), mongoDatabase, userName, passWord);
+                #region Mongo高频采集索引初始化 - 2026-06-10
+                try
+                {
+                    // 2026-06-10 优化：DeviceRealCollect按deviceNo批量Upsert最新采集值，启动时确保deviceNo有索引。
+                    // 使用普通索引而不是唯一索引，避免历史库存在重复deviceNo时影响API站点启动。
+                    MongoDBSingleton.Instance.CreateAscendingIndexV2<MongoRealCollect>("deviceNo");
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.Error("Startup初始化MongoRealCollect.deviceNo索引失败，异常原因：" + ex.Message, ex);
+                }
+                #endregion
             }
             logger.Debug("StartupDebugger-5");
 

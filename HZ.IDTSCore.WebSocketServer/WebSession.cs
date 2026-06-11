@@ -1,4 +1,4 @@
-锘縰sing HZ.CommonUtil.Helpers;
+using HZ.CommonUtil.Helpers;
 using SuperSocket.Channel;
 using SuperSocket.WebSocket.Server;
 using System;
@@ -15,7 +15,7 @@ namespace HZ.IDTSCore.WebSocketServer
         protected override async ValueTask OnSessionConnectedAsync()
         {
             SessionInstance.Instance.AddSession(this);
-            await base.SendAsync("Connection succeeded ok");
+            // 2026-06-10优化：连接建立后不再主动发送欢迎文本，避免客户端把非业务消息按压缩数据/业务JSON解析后主动断开。
         }
 
         protected override ValueTask OnSessionClosedAsync(CloseEventArgs e)

@@ -226,7 +226,11 @@ namespace HZ.IDTSCore.Api
                     }
                     Message = ex.Message;
                 }
-                Thread.Sleep(1000);
+                finally
+                {
+                    // 避免自动备份未配置或未开启时上方 continue 绕过休眠，导致后台线程空转占用CPU。
+                    Thread.Sleep(1000);
+                }
             }
         }
 

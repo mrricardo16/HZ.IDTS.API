@@ -53,7 +53,7 @@ namespace HZ.IDTSCore.Api
         /// <summary>
         /// 设置采集日志的清理周期(天)
         /// </summary>
-        private int CollectLogsClearDays { get; set; } = 2;
+        private int CollectLogsClearDays { get; set; } = 1000000;
         private DateTime LastCollectLogsClearTime { get; set; }
         private string CollectThreadClassName = "LogsThread";
         private string CollectThreadName = "_ClearLogThread";
@@ -65,7 +65,7 @@ namespace HZ.IDTSCore.Api
         /// <summary>
         /// 请求接口日志清理周期(天)
         /// </summary>
-        private int RequestLogsClearDays { get; set; } = 7;
+        private int RequestLogsClearDays { get; set; } = 3;
         private DateTime LastRequestLogsClearTime { get; set; }
         private string RequestThreadClassName = "LogsThread";
         private string RequestThreadName = "_ClearLogThread";
