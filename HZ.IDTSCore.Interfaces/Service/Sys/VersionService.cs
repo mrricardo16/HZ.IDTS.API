@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using SqlSugar.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace HZ.IDTSCore.Interfaces.Service.Sys
@@ -59,29 +60,87 @@ namespace HZ.IDTSCore.Interfaces.Service.Sys
             ReturnMessage returnMessage = new ReturnMessage();
             UserSession user = GetSessionInfo();
             List<tn_dts_logs> logList = new List<tn_dts_logs>();
+
+            if (versionList == null || versionList.Count == 0)
+            {
+                returnMessage.IsSuccess = false;
+                returnMessage.Message = "版本信息不能为空！";
+                return returnMessage;
+            }
+
             foreach (var version in versionList)
             {
-                tn_dts_logs versionLog = new tn_dts_logs();
-                versionLog.cn_guid = Guid.NewGuid().ToString();
-                versionLog.cn_s_logs_type = "操作";
-                versionLog.cn_s_logs_remarks = "用户编号为" + user.UserCode + "的用户使用上传更新包功能向tn_dts_version表中新增一条版本信息记录，详细信息为" + JsonConvert.SerializeObject(version);
-                versionLog.cn_t_create = DateTime.Now;
-                logList.Add(versionLog);
+                if (version == null || string.IsNullOrWhiteSpace(version.cn_s_ver_packagedate))
+                {
+                    returnMessage.IsSuccess = false;
+                    returnMessage.Message = "更新包版本不能为空！";
+                    return returnMessage;
+                }
+
+                version.cn_s_ver_packagedate = version.cn_s_ver_packagedate.Trim();
             }
+
+            List<tn_dts_version> upsertVersionList = versionList
+                .GroupBy(it => it.cn_s_ver_packagedate, StringComparer.OrdinalIgnoreCase)
+                .Select(it => it.Last())
+                .ToList();
+
             ApiResult res = UseTransaction(dbTran =>
             {
-                dbTran.Insertable<tn_dts_version>(versionList).ExecuteCommand();
-                dbTran.Insertable<tn_dts_logs>(logList).ExecuteCommand();
+                foreach (var version in upsertVersionList)
+                {
+                    string packageDate = version.cn_s_ver_packagedate;
+                    string lowerPackageDate = packageDate.ToLower();
+                    tn_dts_version existing = dbTran.Queryable<tn_dts_version>()
+                        .Where(it => it.cn_s_ver_packagedate != null && it.cn_s_ver_packagedate.Trim().ToLower() == lowerPackageDate)
+                        .First();
+
+                    tn_dts_logs versionLog = new tn_dts_logs();
+                    versionLog.cn_guid = Guid.NewGuid().ToString();
+                    versionLog.cn_s_logs_type = "操作";
+                    versionLog.cn_t_create = DateTime.Now;
+
+                    if (existing == null)
+                    {
+                        if (!version.cn_s_ver_isupdated.HasValue)
+                        {
+                            version.cn_s_ver_isupdated = 0;
+                        }
+
+                        dbTran.Insertable<tn_dts_version>(version).ExecuteCommand();
+                        versionLog.cn_s_logs_remarks = "用户编号为" + user.UserCode + "的用户使用上传更新包功能向tn_dts_version表中新增一条版本信息记录，详细信息为" + JsonConvert.SerializeObject(version);
+                    }
+                    else
+                    {
+                        existing.cn_s_ver_number = version.cn_s_ver_number;
+                        existing.cn_s_ver_packagetype = version.cn_s_ver_packagetype;
+                        existing.cn_s_ver_updatecontent = version.cn_s_ver_updatecontent;
+                        existing.cn_s_ver_remarks = version.cn_s_ver_remarks;
+                        existing.cn_s_modify = user.UserCode;
+                        existing.cn_s_modify_by = user.UserName;
+                        existing.cn_t_modify = DateTime.Now;
+
+                        dbTran.Updateable<tn_dts_version>(existing).ExecuteCommand();
+                        versionLog.cn_s_logs_remarks = "用户编号为" + user.UserCode + "的用户使用上传更新包功能发现相同包版本已存在，覆盖更新tn_dts_version表中一条版本信息记录，详细信息为" + JsonConvert.SerializeObject(version);
+                    }
+
+                    logList.Add(versionLog);
+                }
+
+                if (logList.Count > 0)
+                {
+                    dbTran.Insertable<tn_dts_logs>(logList).ExecuteCommand();
+                }
             });
             if (!res.IsSuccess)
             {
-                LogHelper.Info(DateTime.Now.ToString() + "19.2升级（Version）记录管理上传更新包接口新增版本信息失败，详细信息为：" + res.Message);
+                LogHelper.Info(DateTime.Now.ToString() + "19.2升级（Version）记录管理上传更新包接口新增或更新版本信息失败，详细信息为：" + res.Message);
                 returnMessage.IsSuccess = false;
-                returnMessage.Message = "新增失败!";
+                returnMessage.Message = "新增或更新失败!";
                 return returnMessage;
             }
             returnMessage.IsSuccess = true;
-            returnMessage.Message = "新增成功！";
+            returnMessage.Message = "新增或更新成功！";
             return returnMessage;
         }
         #endregion
@@ -107,7 +166,25 @@ namespace HZ.IDTSCore.Interfaces.Service.Sys
         public ReturnMessage BackUpPackage(BackupsPackage backupsPackage)
         {
             ReturnMessage returnMessage = new ReturnMessage();
-            tn_dts_version itemNumber = Db.Queryable<tn_dts_version>().Where(it => it.cn_s_ver_packagedate == backupsPackage.packageDate).First();
+            if (backupsPackage == null || string.IsNullOrWhiteSpace(backupsPackage.packageDate))
+            {
+                returnMessage.IsSuccess = false;
+                returnMessage.Message = "备份对应更新包版本不能为空。";
+                return returnMessage;
+            }
+
+            string packageDate = backupsPackage.packageDate.Trim();
+            string lowerPackageDate = packageDate.ToLower();
+            tn_dts_version itemNumber = Db.Queryable<tn_dts_version>()
+                .Where(it => it.cn_s_ver_packagedate != null && it.cn_s_ver_packagedate.Trim().ToLower() == lowerPackageDate)
+                .First();
+            if (itemNumber == null)
+            {
+                returnMessage.IsSuccess = false;
+                returnMessage.Message = $"备份对应版本记录不存在，PackageDate={packageDate}";
+                return returnMessage;
+            }
+
             itemNumber.cn_s_var_backupfilename = backupsPackage.backupfilename;
             itemNumber.cn_s_var_backupfiletype = backupsPackage.backupfiletype;
             itemNumber.cn_s_var_backupfilepath = backupsPackage.backupfilepath;
@@ -140,18 +217,15 @@ namespace HZ.IDTSCore.Interfaces.Service.Sys
                 return returnMessage;
             }
 
-            tn_dts_version itemNumber = Db.Queryable<tn_dts_version>().Where(it => it.cn_s_ver_packagedate == executeUpdatePackage.PackageDate).First();
+            string packageDate = executeUpdatePackage.PackageDate.Trim();
+            string lowerPackageDate = packageDate.ToLower();
+            tn_dts_version itemNumber = Db.Queryable<tn_dts_version>()
+                .Where(it => it.cn_s_ver_packagedate != null && it.cn_s_ver_packagedate.Trim().ToLower() == lowerPackageDate)
+                .First();
             if (itemNumber == null)
             {
                 returnMessage.IsSuccess = false;
-                returnMessage.Message = $"更新包版本记录不存在，PackageDate={executeUpdatePackage.PackageDate}";
-                return returnMessage;
-            }
-
-            if (itemNumber.cn_s_ver_isupdated == executeUpdatePackage.IsUpdated)
-            {
-                returnMessage.IsSuccess = true;
-                returnMessage.Message = "更新包记录已是目标状态，无需重复更新。";
+                returnMessage.Message = $"更新包版本记录不存在，PackageDate={packageDate}";
                 return returnMessage;
             }
 
@@ -166,7 +240,7 @@ namespace HZ.IDTSCore.Interfaces.Service.Sys
                 return returnMessage;
             }
             returnMessage.IsSuccess = true;
-            returnMessage.Message = "更新包状态写入成功。";
+            returnMessage.Message = "更新包记录已覆盖为目标状态。";
             return returnMessage;
         }
         #endregion
